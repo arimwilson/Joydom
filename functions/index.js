@@ -1,4 +1,6 @@
 const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+admin.initializeApp();
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -8,11 +10,13 @@ const functions = require("firebase-functions");
 //   response.send("Hello from Firebase!");
 // });
 
-exports.startRound = functions.https.onRequest((request, response) => {
-  firebase.database().ref('games/' +gameId).set({
+exports.startRound = functions.https.onRequest(async (request, response) => {
+  const writeResult = await admin.firestore().collection('games').add({
     num_players: 4
     current_double: 9
-  })
+  });
+  response.json({
+  });
 });
 
 exports.takeTurn = functions.https.onRequest((request, response) => {
