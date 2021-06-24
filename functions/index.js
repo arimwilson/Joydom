@@ -11,20 +11,21 @@ admin.initializeApp();
 // });
 
 exports.startRound = functions.https.onRequest(async (request, response) => {
-  const writeResult = await admin.firestore().collection('games').add({
-    num_players: 4
-    current_double: 9
-  });
+  // const writeResult = await admin.firestore().collection("games").add({
+  //   num_players: 4,
+  //   current_double: 9,
+  // });
   response.json({
   });
 });
 
 exports.takeTurn = functions.https.onRequest((request, response) => {
-  if (request.pieceSelected !== null and request.lineSelected !== null) {
+  if (request.pieceSelected !== null && request.lineSelected !== null) {
     // place a piece
 
   } else {
     // need to draw a piece
   }
+  response.send("hello from firebase");
 });
 
