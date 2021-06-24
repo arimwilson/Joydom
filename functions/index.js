@@ -1,14 +1,28 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const database = require("firebase-database");
 admin.initializeApp();
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
 //   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+
+exports.startGame = functions.https.onRequest(async (request, response) => {
+  player_number = 1
+  let players = Array(request.num_players)
+      .fill()
+      .map(function() {
+          player = {name: "Player ${player_number} ", score: 0};
+          player_number++;
+          return player;
+      })
+  const writeResult = await admin.firestore().collection("games").add({
+     players: players,
+     current_double: 9,
+  });
+  response.json({
+    text: "wrote game successfully!",
+  });
+});
+
 
 exports.startRound = functions.https.onRequest(async (request, response) => {
   // const writeResult = await admin.firestore().collection("games").add({
