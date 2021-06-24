@@ -36,7 +36,14 @@ function App() {
 }
 
 function GameInfo() {
-  return (<p>GameInfo</p>);
+  // firebase.functions().useEmulator("localhost", 5001);
+  var startGame = firebase.functions().httpsCallable('startGame');
+  var result = '';
+  startGame({ num_players: 4 })
+      .then((response) => {
+        result = response.text;
+      });
+  return (<p>GameInfo {result}</p>);
 }
 
 function Playfield() {
