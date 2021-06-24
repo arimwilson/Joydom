@@ -13,26 +13,40 @@
   }
 }
 
-.App-header {
+.App header {
   background-color: #282c34;
-  min-height: 100vh;
+  min-height: 5vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  font-size: 12px;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.GameInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  min-height: 5vh;
+  background-color: rgb(40, 37, 53);
+  color: white;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.Playfield {
+  display: flex;
+  flex-direction: column;
+  justify-content: left;
+  min-height: 70vh;
+  background-color: rgb(40, 37, 53);
+  color: white;
+}
+
+.Hand {
+  display: flex;
+  flex-direction: column;
+  justify-content: left;
+  min-height: 20vh;
+  background-color: rgb(40, 37, 53);
+  color: white;
 }
