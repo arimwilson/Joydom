@@ -17,40 +17,58 @@ if (!firebase.apps.length) {
 const firestore = firebase.firestore();
 const functions = firebase.functions();
 
-function App() {
-  return (
-    <div className="App">
-      <header>
-        <h2>Joyce Dominoes</h2>
-      </header>
-      <section className="GameInfo">
-        <GameInfo />
-      </section>
-      <section className="Playfield">
-        <Playfield />
-      </section>
-      <section className="Hand">
-        <Hand />
-      </section>
-    </div>
-  );
-}
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { game: null }
+  }
 
-function GameInfo() {
-  if (window.location.hostname === "localhost") {
-    functions.useFunctionsEmulator("http://localhost:5001");
-    firestore.settings({
-      host: "localhost:8080",
-      ssl: false,
+  componentDidMount() {
+    if (window.location.hostname === "localhost" ||
+        window.location.hostname === "192.168.0.105") {
+      const host = window.location.hostname;
+      functions.useFunctionsEmulator(`http://${host}:5001`);
+      firestore.settings({
+        host: `${host}:8080`,
+        ssl: false,
+      });
+    }
+    var startGame = functions.httpsCallable('startGame');
+    startGame({ numPlayers: 4 }).then((response) => {
+      this.setState({game: response, });
+    }).catch((error) => {
+      console.log(`error: ${JSON.stringify(error)}`);
     });
   }
-  var startGame = functions.httpsCallable('startGame');
-  var result = '';
-  startGame({ numPlayers: 4 })
-      .then((response) => {
-        result = response.text;
-      });
-  return (<p>GameInfo {result}</p>);
+
+  render() {
+    return (
+      <div className="App">
+        <header>
+          <h2>Joyce Dominoes</h2>
+        </header>
+        <section className="GameInfo">
+          <GameInfo game={this.state.game}/>
+        </section>
+        <section className="Playfield">
+          <Playfield />
+        </section>
+        <section className="Hand">
+          <Hand />
+        </section>
+      </div>
+    );
+  }
+}
+
+class GameInfo extends React.Component {
+  render() {
+    if (this.props.game !== null) {
+      return (<p>Game: Current double: {this.props.game.data.currentDouble}</p>);
+    } else {
+      return (<p>Game not yet started</p>);
+    }
+  }
 }
 
 function Playfield() {

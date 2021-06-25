@@ -3,21 +3,17 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 exports.startGame = functions.https.onCall((data, context) => {
-  //functions.logger.info(data);
+  // functions.logger.info(data);
   const players = Array(data.numPlayers);
   for (let playerNumber = 1; playerNumber <= data.numPlayers; ++playerNumber) {
-    players[playerNumber] = {
+    players[playerNumber - 1] = {
       name: "Player " + playerNumber,
       score: 0,
     };
   }
-  admin.database().ref("game").child("game").set({
-    players: players,
-    currentDouble: 9,
-  });
-  return {
-    text: "wrote game successfully!",
-  };
+  game = { players: players, currentDouble: 9, unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]}
+  admin.database().ref("game").child("123").set(game);
+  return game;
 });
 
 
@@ -33,7 +29,6 @@ exports.startRound = functions.https.onRequest(async (request, response) => {
 exports.takeTurn = functions.https.onRequest((request, response) => {
   if (request.pieceSelected !== null && request.lineSelected !== null) {
     // place a piece
-
   } else {
     // need to draw a piece
   }
