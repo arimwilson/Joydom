@@ -15,6 +15,7 @@ if (!firebase.apps.length) {
 }
 
 const firestore = firebase.firestore();
+const functions = firebase.functions();
 
 function App() {
   return (
@@ -36,10 +37,16 @@ function App() {
 }
 
 function GameInfo() {
-  // firebase.functions().useEmulator("localhost", 5001);
-  var startGame = firebase.functions().httpsCallable('startGame');
+  if (window.location.hostname === "localhost") {
+    functions.useFunctionsEmulator("http://localhost:5001");
+    firestore.settings({
+      host: "localhost:8080",
+      ssl: false,
+    });
+  }
+  var startGame = functions.httpsCallable('startGame');
   var result = '';
-  startGame({ num_players: 4 })
+  startGame({ numPlayers: 4 })
       .then((response) => {
         result = response.text;
       });

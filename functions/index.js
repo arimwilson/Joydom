@@ -1,33 +1,30 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const database = require("firebase-database");
 admin.initializeApp();
 
-//   functions.logger.info("Hello logs!", {structuredData: true});
-
-exports.startGame = functions.https.onRequest(async (request, response) => {
-  player_number = 1
-  let players = Array(request.num_players)
-      .fill()
-      .map(function() {
-          player = {name: "Player ${player_number} ", score: 0};
-          player_number++;
-          return player;
-      })
-  const writeResult = await admin.firestore().collection("games").add({
-     players: players,
-     current_double: 9,
+exports.startGame = functions.https.onCall((data, context) => {
+  //functions.logger.info(data);
+  const players = Array(data.numPlayers);
+  for (let playerNumber = 1; playerNumber <= data.numPlayers; ++playerNumber) {
+    players[playerNumber] = {
+      name: "Player " + playerNumber,
+      score: 0,
+    };
+  }
+  admin.database().ref("game").child("game").set({
+    players: players,
+    currentDouble: 9,
   });
-  response.json({
+  return {
     text: "wrote game successfully!",
-  });
+  };
 });
 
 
 exports.startRound = functions.https.onRequest(async (request, response) => {
   // const writeResult = await admin.firestore().collection("games").add({
-  //   num_players: 4,
-  //   current_double: 9,
+  //   numPlayers: 4,
+  //   currentDouble: 9,
   // });
   response.json({
   });
