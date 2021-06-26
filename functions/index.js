@@ -11,9 +11,11 @@ exports.startGame = functions.https.onCall((data, context) => {
       score: 0,
     };
   }
-  game = { players: players, currentDouble: 9, unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]}
-  admin.database().ref("game").child("123").set(game);
-  return game;
+  const game = {
+    players: players, currentDouble: 9,
+    unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+  };
+  admin.database().ref(`game/${data.gameId}`).set(game);
 });
 
 

@@ -22,13 +22,15 @@
     ]
   },
   "emulators": {
-    "hosting": {
-      "host": "0.0.0.0"
-    },
     "functions": {
-      "host": "0.0.0.0"
+      "host": "0.0.0.0",
+      "port": 5001
     },
     "database": {
+      "host": "192.168.0.105",
+      "port": 9000
+    },
+    "ui": {
       "host": "0.0.0.0"
     }
   }
