@@ -2,10 +2,8 @@ import React from 'react';
 import './App.css';
 
 import firebase from 'firebase/app';
-import 'firebase/firestore';
+import 'firebase/database';
 import 'firebase/functions';
-
-import { useCollectionData } from 'react-firebase-hooks/firestore';
 
 import { firebaseConfig } from './firebaseConfig'
 if (!firebase.apps.length) {
@@ -14,28 +12,31 @@ if (!firebase.apps.length) {
   firebase.app();
 }
 
-const firestore = firebase.firestore();
+const database = firebase.database();
 const functions = firebase.functions();
+if (window.location.hostname === "localhost" ||
+    window.location.hostname === "192.168.0.105") {
+  const host = window.location.hostname;
+  functions.useFunctionsEmulator(`http://${host}:5001`);
+  database.useEmulator(`${host}`, 9000);
+}
+
+const gameId = 123;
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { game: null }
+    this.state = { game: null, }
   }
 
   componentDidMount() {
-    if (window.location.hostname === "localhost" ||
-        window.location.hostname === "192.168.0.105") {
-      const host = window.location.hostname;
-      functions.useFunctionsEmulator(`http://${host}:5001`);
-      firestore.settings({
-        host: `${host}:8080`,
-        ssl: false,
-      });
-    }
     var startGame = functions.httpsCallable('startGame');
-    startGame({ numPlayers: 4 }).then((response) => {
-      this.setState({game: response, });
+    database.ref(`game/${gameId}`).on('value', (snapshot) => {
+      this.setState({game: snapshot.val(), });
+    }, (errorObject) => {
+      console.log(errorObject);
+    });
+    startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
     }).catch((error) => {
       console.log(`error: ${JSON.stringify(error)}`);
     });
@@ -64,7 +65,7 @@ class App extends React.Component {
 class GameInfo extends React.Component {
   render() {
     if (this.props.game !== null) {
-      return (<p>Game: Current double: {this.props.game.data.currentDouble}</p>);
+      return (<p>Game: Current double: {this.props.game.currentDouble}</p>);
     } else {
       return (<p>Game not yet started</p>);
     }
