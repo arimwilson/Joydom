@@ -20,46 +20,46 @@ function getShuffledArray(arr) {
   return shuffled;
 }
 
-exports.startGame = functions.https.onCall((data, context) => {
-  if (data.numPlayers < 2 || data.numPlayers > 8) {
-    throw new functions.https.HttpsError(
-        'invalid-argument', 'Too few or many players specified.');
+function getTilesPerPlayer(numPlayers) {
+  switch (numPlayers) {
+    case 2:
+    case 3:
+    case 4:
+      return 9;
+      break;
+    case 5:
+    case 6:
+      return 8;
+      break;
+    case 7:
+    case 8:
+      return 6;
+      break;
+    default:
+      throw new functions.https.HttpsError(
+          'invalid-argument', 'Too few or many players specified.');
   }
+}
+
+exports.startGame = functions.https.onCall((data, context) => {
   // double 9 set has 55 tiles - (n+1)(n=2)/2
   const tiles = Array(55);
   for (let end1 = 0, i = 0; end1 <= 9; ++end1) {
     for (let end2 = 0; end2 <= end1; ++end2) {
-      tiles[i++] = {
-        end1: end1,
-        end2: end2
-      }
+      tiles[i++] = new DominoTile(end1, end2);
     }
   }
   //functions.logger.info(tiles);
   const shuffled_tiles = getShuffledArray(tiles);
   const players = Array(data.numPlayers);
-  var tiles_per_player;
-  switch (data.numPlayers) {
-    case 2:
-    case 3:
-    case 4:
-      tiles_per_player = 9;
-      break;
-    case 5:
-    case 6:
-      tiles_per_player = 8;
-      break;
-    case 7:
-    case 8:
-      tiles_per_player = 6;
-      break;
-  }
+  const tiles_per_player = getTilesPerPlayer(data.numPlayers);
   for (let playerNumber = 1; playerNumber <= data.numPlayers; ++playerNumber) {
     const tile_index = (playerNumber - 1) * tiles_per_player;
     players[playerNumber - 1] = {
       name: "Player " + playerNumber,
       score: 0,
-      tiles: shuffled_tiles.slice(tile_index, tile_index + tiles_per_player)
+      line: [{end1: 1, end2: 2}],
+      hand: shuffled_tiles.slice(tile_index, tile_index + tiles_per_player)
     };
   }
   const game = {
