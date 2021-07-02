@@ -57,7 +57,7 @@ class App extends React.Component {
                 <Playfield players={this.state.game.players}/>
               </section>
               <section className="Hand">
-                <Hand />
+                <Hand player="Player 1" players={this.state.game.players}/>
               </section>
             </div>
           }
@@ -75,27 +75,42 @@ class GameInfo extends React.Component {
 class Playfield extends React.Component {
   render() {
     let players = this.props.players.map(function(player) {
-      let tiles = player.tiles.map(function(tile) {
-        return (<div>{tile.end1} {tile.end2}</div>)
+      console.log(player);
+      let line = player.line.map(function(tile) {
+        if (tile !== null) {
+          return (<div>{tile.end1}{tile.end2}</div>);
+        } else {
+          return;
+        }
       });
-      return <tr><td>{player.name}</td><td>{player.score}</td><td>{tiles}</td></tr>;
+      return (<tr><td>{player.name}</td><td>{player.score}</td><td>{line}</td></tr>);
     });
     return (
         <p>
-          <t>
+          <table>
             <tr>
               <th>Name</th>
               <th>Score</th>
-              <th>Tiles</th>
+              <th>Line</th>
             </tr>
             {players}
-          </t>
+          </table>
         </p>);
   }
 }
 
-function Hand() {
-  return (<p>Hand</p>);
+class Hand extends React.Component {
+  render() {
+    for (let i = 0; i < this.props.players.length; i++) {
+      if (this.props.players[i].name == this.props.player) {
+        let hand = this.props.players[i].hand.map(function(tile) {
+          return (<td>{tile.end1}{tile.end2}</td> );
+        });
+        return (<p>Hand: <table><tr>{hand}</tr></table></p>);
+        break;
+      }
+    }
+  }
 }
 
 

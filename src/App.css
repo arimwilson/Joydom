@@ -50,3 +50,7 @@
   background-color: rgb(40, 37, 53);
   color: white;
 }
+
+table {
+  border-spacing: 10px;
+}
