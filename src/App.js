@@ -43,37 +43,55 @@ class App extends React.Component {
   }
 
   render() {
-    return (
-      <div className="App">
-        <header>
-          <h2>Joyce Dominoes</h2>
-        </header>
-        <section className="GameInfo">
-          <GameInfo game={this.state.game}/>
-        </section>
-        <section className="Playfield">
-          <Playfield />
-        </section>
-        <section className="Hand">
-          <Hand />
-        </section>
-      </div>
-    );
+      return (
+        <div className="App">
+          <header>
+            <h2>Joyce Dominoes</h2>
+          </header>
+          {this.state.game !== null &&
+            <div>
+              <section className="GameInfo">
+                <GameInfo currentDouble={this.state.game.currentDouble}/>
+              </section>
+              <section className="Playfield">
+                <Playfield players={this.state.game.players}/>
+              </section>
+              <section className="Hand">
+                <Hand />
+              </section>
+            </div>
+          }
+        </div>
+      );
   }
 }
 
 class GameInfo extends React.Component {
   render() {
-    if (this.props.game !== null) {
-      return (<p>Game: Current double: {this.props.game.currentDouble}</p>);
-    } else {
-      return (<p>Game not yet started</p>);
-    }
+    return (<p>Round: Double: {this.props.currentDouble}</p>);
   }
 }
 
-function Playfield() {
-  return (<p>Playfield</p>);
+class Playfield extends React.Component {
+  render() {
+    let players = this.props.players.map(function(player) {
+      let tiles = player.tiles.map(function(tile) {
+        return (<div>{tile.end1} {tile.end2}</div>)
+      });
+      return <tr><td>{player.name}</td><td>{player.score}</td><td>{tiles}</td></tr>;
+    });
+    return (
+        <p>
+          <t>
+            <tr>
+              <th>Name</th>
+              <th>Score</th>
+              <th>Tiles</th>
+            </tr>
+            {players}
+          </t>
+        </p>);
+  }
 }
 
 function Hand() {
