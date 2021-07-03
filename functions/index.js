@@ -41,6 +41,10 @@ function getTilesPerPlayer(numPlayers) {
   }
 }
 
+function isDoubleFun(currentDouble) {
+  return (tile) => tile.end1 === currentDouble && tile.end2 === currentDouble;
+}
+
 exports.startGame = functions.https.onCall((data, context) => {
   // double 9 set has 55 tiles - (n+1)(n=2)/2
   const tiles = Array(55);
@@ -49,24 +53,51 @@ exports.startGame = functions.https.onCall((data, context) => {
       tiles[i++] = new DominoTile(end1, end2);
     }
   }
-  //functions.logger.info(tiles);
   const shuffled_tiles = getShuffledArray(tiles);
-  const players = Array(data.numPlayers);
   const tiles_per_player = getTilesPerPlayer(data.numPlayers);
-  for (let playerNumber = 1; playerNumber <= data.numPlayers; ++playerNumber) {
+  let players = Array(data.numPlayers);
+  for (let playerNumber = 1; playerNumber <= players.length;
+       ++playerNumber) {
     const tile_index = (playerNumber - 1) * tiles_per_player;
     players[playerNumber - 1] = {
       name: "Player " + playerNumber,
       score: 0,
-      line: [{end1: 1, end2: 2}],
       hand: shuffled_tiles.slice(tile_index, tile_index + tiles_per_player)
     };
   }
   const game = {
-    players: players, currentDouble: 9,
+    players: players,
     unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     boneyard: shuffled_tiles.slice(data.numPlayers * tiles_per_player)
   };
+  // find current double in players hands and play it and set current player. if
+  // it's not there, check for the next unsuded double. if none of the unused
+  // doubles are in player hands, add tiles to player hands from boneyard until
+  // they have one.
+  let foundDouble = false;
+  while (!foundDouble) {
+    for (let i = 0; i < game.unusedDoubles.length; i++) {
+      game.currentDouble = game.unusedDoubles[i];
+      for (let j = 0; j < game.players.length; j++) {
+        let doubleIndex = game.players[j].hand.findIndex(isDoubleFun(game.currentDouble));
+        if (doubleIndex !== -1) {
+          game.players[j].line = [new DominoTile(
+              game.currentDouble, game.currentDouble)];
+          game.players[j].hand.splice(doubleIndex, 1);
+          game.currentPlayer = game.players[j].name;
+          game.unusedDoubles.splice(i, 1);
+          foundDouble = true;
+          break;
+        }
+      }
+      if (foundDouble) break;
+    }
+    if (foundDouble) break;
+    for (let i = 0; i < game.players.length; i++) {
+      game.players[i].hand.push(game.boneyard[0]);
+      game.boneyard.splice(0, 1);
+    }
+  }
   admin.database().ref(`game/${data.gameId}`).set(game);
 });
 
