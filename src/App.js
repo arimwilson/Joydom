@@ -88,9 +88,9 @@ function getPlayerRowFun(currentPlayer) {
       }
     }): <div>empty</div>);
     if (player.name === currentPlayer) {
-      return (<tr><td><u>{player.name}</u></td><td>{player.score}</td><td>{line}</td></tr>);
+      return (<tr><td><u>{player.name}</u></td><td>{player.score}</td><td>{line}</td>{player.penny && <td>penny</td>}</tr>);
     } else {
-      return (<tr><td>{player.name}</td><td>{player.score}</td><td>{line}</td></tr>);
+      return (<tr><td>{player.name}</td><td>{player.score}</td><td>{line}</td>{player.penny && <td>penny</td>}</tr>);
     }
   }
 }

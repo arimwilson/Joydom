@@ -62,7 +62,8 @@ exports.startGame = functions.https.onCall((data, context) => {
     players[playerNumber - 1] = {
       name: "Player " + playerNumber,
       score: 0,
-      hand: shuffled_tiles.slice(tile_index, tile_index + tiles_per_player)
+      hand: shuffled_tiles.slice(tile_index, tile_index + tiles_per_player),
+      penny: false
     };
   }
   const game = {
