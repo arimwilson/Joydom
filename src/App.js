@@ -51,13 +51,19 @@ class App extends React.Component {
           {this.state.game !== null &&
             <div>
               <section className="GameInfo">
-                <GameInfo currentDouble={this.state.game.currentDouble}/>
+                <GameInfo
+                    currentDouble={this.state.game.currentDouble}
+                    unusedDoubles={this.state.game.unusedDoubles}/>
               </section>
               <section className="Playfield">
-                <Playfield players={this.state.game.players}/>
+                <Playfield
+                    players={this.state.game.players}
+                    currentPlayer={this.state.game.currentPlayer}/>
               </section>
               <section className="Hand">
-                <Hand player="Player 1" players={this.state.game.players}/>
+                <Hand
+                    currentPlayer={this.state.game.currentPlayer}
+                    players={this.state.game.players}/>
               </section>
             </div>
           }
@@ -68,25 +74,33 @@ class App extends React.Component {
 
 class GameInfo extends React.Component {
   render() {
-    return (<p>Round: Double: {this.props.currentDouble}</p>);
+    return (<p><b>Round</b>: Double: {this.props.currentDouble}, Unused: {this.props.unusedDoubles}</p>);
+  }
+}
+
+function getPlayerRowFun(currentPlayer) {
+  return function(player) {
+    let line = ("line" in player? player.line.map(function(tile) {
+      if (tile !== null) {
+        return (<div>{tile.end1}{tile.end2}</div>);
+      } else {
+        return;
+      }
+    }): <div>empty</div>);
+    if (player.name === currentPlayer) {
+      return (<tr><td><u>{player.name}</u></td><td>{player.score}</td><td>{line}</td></tr>);
+    } else {
+      return (<tr><td>{player.name}</td><td>{player.score}</td><td>{line}</td></tr>);
+    }
   }
 }
 
 class Playfield extends React.Component {
   render() {
-    let players = this.props.players.map(function(player) {
-      console.log(player);
-      let line = player.line.map(function(tile) {
-        if (tile !== null) {
-          return (<div>{tile.end1}{tile.end2}</div>);
-        } else {
-          return;
-        }
-      });
-      return (<tr><td>{player.name}</td><td>{player.score}</td><td>{line}</td></tr>);
-    });
+    let players = this.props.players.map(getPlayerRowFun(this.props.currentPlayer));
     return (
         <p>
+          <b>Lines:</b>
           <table>
             <tr>
               <th>Name</th>
@@ -102,11 +116,22 @@ class Playfield extends React.Component {
 class Hand extends React.Component {
   render() {
     for (let i = 0; i < this.props.players.length; i++) {
-      if (this.props.players[i].name == this.props.player) {
+      if (this.props.players[i].name == this.props.currentPlayer) {
         let hand = this.props.players[i].hand.map(function(tile) {
-          return (<td>{tile.end1}{tile.end2}</td> );
+          return (<td><button>{tile.end1}{tile.end2}</button></td> );
         });
-        return (<p>Hand: <table><tr>{hand}</tr></table></p>);
+        return (
+            <p>
+              <b>{this.props.currentPlayer}'s hand:</b>
+              <table>
+                <tr>{hand}</tr>
+                <tr>
+                  <td><button>Draw</button></td>
+                  <td><button>Pass</button></td>
+                  <td><button>Walking</button></td>
+                </tr>
+              </table>
+            </p>);
         break;
       }
     }
