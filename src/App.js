@@ -146,6 +146,7 @@ class Hand extends React.Component {
                   <td><button onClick={this.handleClick}>Draw</button></td>
                   <td><button onClick={this.handleClick}>Pass</button></td>
                   <td><button onClick={this.handleClick}>Walking</button></td>
+                  <FinishTurn />
                 </tr>
               </table>
             </p>);
@@ -154,5 +155,10 @@ class Hand extends React.Component {
   }
 }
 
+class FinishTurn extends React.Component {
+  render() :
+
+  }
+}
 
 export default App;
