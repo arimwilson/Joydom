@@ -15,7 +15,7 @@ if (!firebase.apps.length) {
 const database = firebase.database();
 const functions = firebase.functions();
 if (window.location.hostname === "localhost" ||
-    window.location.hostname === "192.168.0.105") {
+    window.location.hostname.startsWith("192.168.0")) {
   const host = window.location.hostname;
   functions.useFunctionsEmulator(`http://${host}:5001`);
   database.useEmulator(`${host}`, 9000);
@@ -114,11 +114,28 @@ class Playfield extends React.Component {
 }
 
 class Hand extends React.Component {
+  handleClick(e) {
+    const text = e.target.textContent;
+    if (text === "Draw") {
+    } else if (text === "Pass") {
+    } else if (text === "Walking") {
+    } else {
+      const tile = Number(text);
+      if (tile % 11 === 0) {  // double
+      }
+    }
+  }
+
   render() {
     for (let i = 0; i < this.props.players.length; i++) {
-      if (this.props.players[i].name == this.props.currentPlayer) {
+      if (this.props.players[i].name === this.props.currentPlayer) {
+        let handleClick = this.handleClick;
         let hand = this.props.players[i].hand.map(function(tile) {
-          return (<td><button>{tile.end1}{tile.end2}</button></td> );
+          return (
+              <td>
+                <button onClick={handleClick}>{tile.end1}{tile.end2}
+                </button>
+              </td>);
         });
         return (
             <p>
@@ -126,13 +143,12 @@ class Hand extends React.Component {
               <table>
                 <tr>{hand}</tr>
                 <tr>
-                  <td><button>Draw</button></td>
-                  <td><button>Pass</button></td>
-                  <td><button>Walking</button></td>
+                  <td><button onClick={this.handleClick}>Draw</button></td>
+                  <td><button onClick={this.handleClick}>Pass</button></td>
+                  <td><button onClick={this.handleClick}>Walking</button></td>
                 </tr>
               </table>
             </p>);
-        break;
       }
     }
   }
