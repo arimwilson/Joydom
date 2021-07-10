@@ -30,12 +30,12 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    var startGame = functions.httpsCallable('startGame');
     database.ref(`game/${gameId}`).on('value', (snapshot) => {
       this.setState({game: snapshot.val(), });
     }, (errorObject) => {
       console.log(errorObject);
     });
+    var startGame = functions.httpsCallable('startGame');
     startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
     }).catch((error) => {
       console.log(`error: ${JSON.stringify(error)}`);
@@ -43,32 +43,32 @@ class App extends React.Component {
   }
 
   render() {
-      return (
-        <div className="App">
-          <header>
-            <h2>Joyce Dominoes</h2>
-          </header>
-          {this.state.game !== null &&
-            <div>
-              <section className="GameInfo">
-                <GameInfo
-                    currentDouble={this.state.game.currentDouble}
-                    unusedDoubles={this.state.game.unusedDoubles}/>
-              </section>
-              <section className="Playfield">
-                <Playfield
-                    players={this.state.game.players}
-                    currentPlayer={this.state.game.currentPlayer}/>
-              </section>
-              <section className="Hand">
-                <Hand
-                    currentPlayer={this.state.game.currentPlayer}
-                    players={this.state.game.players}/>
-              </section>
-            </div>
-          }
-        </div>
-      );
+    return (
+      <div className="App">
+        <header>
+          <h2>Joyce Dominoes</h2>
+        </header>
+        {this.state.game !== null &&
+          <div>
+            <section className="GameInfo">
+              <GameInfo
+                  currentDouble={this.state.game.currentDouble}
+                  unusedDoubles={this.state.game.unusedDoubles}/>
+            </section>
+            <section className="Playfield">
+              <Playfield
+                  players={this.state.game.players}
+                  currentPlayer={this.state.game.currentPlayer}/>
+            </section>
+            <section className="Hand">
+              <Hand
+                  currentPlayer={this.state.game.currentPlayer}
+                  players={this.state.game.players}/>
+            </section>
+          </div>
+        }
+      </div>
+    );
   }
 }
 
@@ -87,11 +87,15 @@ function getPlayerRowFun(currentPlayer) {
         return;
       }
     }): <div>empty</div>);
-    if (player.name === currentPlayer) {
-      return (<tr><td><u>{player.name}</u></td><td>{player.score}</td><td>{line}</td>{player.penny && <td>penny</td>}</tr>);
-    } else {
-      return (<tr><td>{player.name}</td><td>{player.score}</td><td>{line}</td>{player.penny && <td>penny</td>}</tr>);
-    }
+    const isCurrentPlayer = player.name === currentPlayer;
+    return (
+      <tr>
+        <td>{isCurrentPlayer? <u>{player.name}</u> : player.name}</td>
+        <td>{player.score}</td>
+        <td>{line}</td>
+        <td>{player.penny? 'yes': 'no'}</td>
+        <td>{player.walking? 'yes': 'no'}</td>
+      </tr>);
   }
 }
 
@@ -106,11 +110,21 @@ class Playfield extends React.Component {
               <th>Name</th>
               <th>Score</th>
               <th>Line</th>
+              <th>Penny?</th>
+              <th>Walking?</th>
             </tr>
             {players}
           </table>
         </p>);
   }
+}
+
+const actions = {
+  NONE: 0,
+  PLAY: 1,
+  DRAW: 2,
+  PASS: 3,
+  WALKING: 4,
 }
 
 class Hand extends React.Component {
@@ -121,15 +135,24 @@ class Hand extends React.Component {
 
   handleClick = (e) => {
     const text = e.target.textContent;
+    var takeAction = functions.httpsCallable('takeAction');
+    var request = {gameId: gameId, action: actions.PLAY};
     if (text === "Draw") {
+      request.action = actions.DRAW;
     } else if (text === "Pass") {
+      request.action = actions.PASS;
+    } else if (text === "Pass/end turn") {
+      request.action = actions.PASS;
     } else if (text === "Walking") {
-    } else if (text === "End turn") {
+      request.action = actions.WALKING;
     } else {
-      const tile = Number(text);
-      var line = prompt(`Which line (1-${this.props.players.length})?`);
-      this.setState({});
+      request.tile = Number(text);
+      request.line = prompt(`Which line (1-${this.props.players.length})?`);
     }
+    takeAction(request).then((response) => {
+    }).catch((error) => {
+      alert(`error: ${JSON.stringify(error)}`);
+    });
   }
 
   render() {
@@ -150,8 +173,8 @@ class Hand extends React.Component {
               <table>
                 <tr>
                   <td><button onClick={this.handleClick}>Draw</button></td>
-                  <td><button onClick={this.handleClick}>Walking</button></td>
                   <td><button onClick={this.handleClick}>Pass/end turn</button></td>
+                  <td><button onClick={this.handleClick}>Walking</button></td>
                 </tr>
               </table>
             </p>);
