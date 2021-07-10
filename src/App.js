@@ -38,7 +38,7 @@ class App extends React.Component {
     var startGame = functions.httpsCallable('startGame');
     startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
     }).catch((error) => {
-      console.log(`error: ${JSON.stringify(error)}`);
+      alert(`error: ${JSON.stringify(error)}`);
     });
   }
 
