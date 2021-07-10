@@ -95,7 +95,6 @@ exports.startGame = functions.https.onCall((data, context) => {
               game.currentDouble, game.currentDouble)];
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
-          // game.currentActions = [actions.NONE];
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -124,6 +123,12 @@ exports.startRound = functions.https.onCall((data, context) => {
 exports.takeAction = functions.https.onCall((data, context) => {
   admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     var game = snapshot.val();
+    let currentPlayerIndex = 0;
+    for (; currentPlayerIndex < game.players.length; currentPlayerIndex++) {
+      if (game.players[currentPlayerIndex].name == game.currentPlayer) {
+        break;
+      }
+    }
     switch (data.action) {
       case actions.PLAY:
         // play(game, data.tile, data.line);
@@ -132,28 +137,40 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // draw(game);
         break;
       case actions.PASS:
-        for (let i = 0; i < game.players.length; i++) {
-          if (game.players[i].name == game.currentPlayer) {
-            const nextPlayer = (i + 1) % game.players.length + 1
-            game.currentPlayer = `Player ${nextPlayer}`;
+        // can only pass if you've either played or drawn
+        if (!game.hasOwnProperty("currentActions")) {
+          return new functions.https.HttpsError(
+              'invalid-argument', 'Can\'t pass without drawing or playing.');
+        }
+        let playedOrDrew = false;
+        for (let i = 0; i < game.currentActions.length; i++) {
+          if (game.currentActions.action === actions.PLAY ||
+              game.currentActions.action === actions.DRAW) {
+            playedOrDrew = true;
             break;
           }
         }
-        // pass(game);
+        if (!playedOrDrew) {
+          return new functions.https.HttpsError(
+              'invalid-argument', 'Can\'t pass without drawing or playing.');
+        }
+        const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1
+        game.currentPlayer = `Player ${nextPlayer}`;
+        delete game.currentActions;
         break;
       case actions.WALKING:
-        for (let i = 0; i < game.players.length; i++) {
-          if (game.players[i].name == game.currentPlayer) {
-            game.players[i].walking = true;
-            break;
-          }
-        }
+        game.players[currentPlayerIndex].walking = true;
         break;
       default:
-        throw new functions.https.HttpsError(
+        return new functions.https.HttpsError(
             'invalid-argument', 'Invalid action specified.');
     }
+    if ("currentActions" in game) {
+      game.currentActions.unshift(data);
+    } else {
+      game.currentActions = [data];
+    }
     admin.database().ref(`game/${data.gameId}`).set(game);
-  });
+  }, function(error) { functions.logger.log(error) });
 });
 
