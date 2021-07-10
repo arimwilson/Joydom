@@ -114,15 +114,21 @@ class Playfield extends React.Component {
 }
 
 class Hand extends React.Component {
-  handleClick(e) {
+  constructor(props) {
+    super(props);
+    this.state = { tilesPlayed: [],  walking: false };
+  }
+
+  handleClick = (e) => {
     const text = e.target.textContent;
     if (text === "Draw") {
     } else if (text === "Pass") {
     } else if (text === "Walking") {
+    } else if (text === "End turn") {
     } else {
       const tile = Number(text);
-      if (tile % 11 === 0) {  // double
-      }
+      var line = prompt(`Which line (1-${this.props.players.length})?`);
+      this.setState({});
     }
   }
 
@@ -140,24 +146,17 @@ class Hand extends React.Component {
         return (
             <p>
               <b>{this.props.currentPlayer}'s hand:</b>
+              <table><tr>{hand}</tr></table>
               <table>
-                <tr>{hand}</tr>
                 <tr>
                   <td><button onClick={this.handleClick}>Draw</button></td>
-                  <td><button onClick={this.handleClick}>Pass</button></td>
                   <td><button onClick={this.handleClick}>Walking</button></td>
-                  <FinishTurn />
+                  <td><button onClick={this.handleClick}>Pass/end turn</button></td>
                 </tr>
               </table>
             </p>);
       }
     }
-  }
-}
-
-class FinishTurn extends React.Component {
-  render() :
-
   }
 }
 
