@@ -11,6 +11,18 @@ class DominoTile {
   equals(tile2) {
     return this.end1 == tile2.end1 && this.end2 == tile2.end2;
   }
+
+  swapIfNeeded(tile2) {
+    if (this.end1 != tile2.end2) {
+      const end2 = this.end2;
+      this.end2 = this.end1;
+      this.end1 = end2;
+    }
+  }
+
+  match(tile2) {
+    return this.end1 == tile2.end2 || this.end2 == tile2.end2;
+  }
 }
 
 function getShuffledArray(arr) {
@@ -84,6 +96,7 @@ exports.startGame = functions.https.onCall((data, context) => {
     unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     boneyard: shuffled_tiles.slice(data.numPlayers * tiles_per_player)
   };
+  admin.database().ref(`game/${data.gameId}`).set(game);
   // find current double in players hands and play it and set current player. if
   // it's not there, check for the next unsuded double. if none of the unused
   // doubles are in player hands, add tiles to player hands from boneyard until
@@ -144,11 +157,6 @@ exports.takeAction = functions.https.onCall((data, context) => {
       case actions.PLAY:
         // note: this makes the game not work for double sets above 9
         const tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
-        if ("line" in game.players[data.line - 1]) {
-          game.players[data.line - 1].line.push(tile);
-        } else {
-          game.players[data.line - 1].line = [tile]
-        }
         let inHand = false;
         for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
           if (tile.equals(game.players[currentPlayerIndex].hand[i])) {
@@ -160,6 +168,26 @@ exports.takeAction = functions.https.onCall((data, context) => {
         if (!inHand) {
           throw new functions.https.HttpsError(
             'invalid-argument', 'Can\'t play tile not in hand.');
+        }
+        if ("line" in game.players[data.line - 1]) {
+          const line = game.players[data.line - 1].line;
+          if (tile.match(line[line.length - 1])) {
+            tile.swapIfNeeded(line[line.length - 1]);
+          } else {
+            throw new functions.https.HttpsError(
+                'invalid-argument', 'Can\'t play on non-matching tile.');
+          }
+          game.players[data.line - 1].line.push(tile);
+        } else {
+          const currentDouble = new DominoTile(
+              game.currentDouble, game.currentDouble);
+          if (tile.match(currentDouble)) {
+            tile.swapIfNeeded(currentDouble);
+          } else {
+            throw new functions.https.HttpsError(
+                'invalid-argument', 'Can\'t play on non-matching tile.');
+          }
+          game.players[data.line - 1].line = [tile]
         }
         game.players[currentPlayerIndex].hand.splice()
         break;

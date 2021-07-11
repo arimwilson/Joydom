@@ -48,6 +48,7 @@ class App extends React.Component {
         <header>
           <h2>Joyce Dominoes</h2>
         </header>
+        Pennies and new rounds are not yet implemented. Chaos reigns.
         {this.state.game !== null &&
           <div>
             <section className="GameInfo">
