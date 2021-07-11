@@ -82,7 +82,7 @@ function getPlayerRowFun(currentPlayer) {
   return function(player) {
     let line = ("line" in player? player.line.map(function(tile) {
       if (tile !== null) {
-        return (<div>{tile.end1}{tile.end2}</div>);
+        return (<span>{tile.end1}{tile.end2} </span>);
       } else {
         return;
       }
@@ -148,6 +148,9 @@ class Hand extends React.Component {
     } else {
       request.tile = Number(text);
       request.line = prompt(`Which line (1-${this.props.players.length})?`);
+      if (request.line === null) {
+        return;
+      }
     }
     takeAction(request).then((response) => {
     }).catch((error) => {
