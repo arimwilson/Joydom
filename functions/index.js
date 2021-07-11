@@ -7,6 +7,10 @@ class DominoTile {
     this.end1 = end1;
     this.end2 = end2;
   }
+
+  equals(tile2) {
+    return this.end1 == tile2.end1 && this.end2 == tile2.end2;
+  }
 }
 
 function getShuffledArray(arr) {
@@ -121,38 +125,82 @@ exports.startRound = functions.https.onCall((data, context) => {
 });
 
 exports.takeAction = functions.https.onCall((data, context) => {
-  admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+  return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     var game = snapshot.val();
+    const gameId = data.gameId;
     let currentPlayerIndex = 0;
     for (; currentPlayerIndex < game.players.length; currentPlayerIndex++) {
       if (game.players[currentPlayerIndex].name == game.currentPlayer) {
         break;
       }
     }
+    delete data.gameId;
+    if ("currentActions" in game) {
+      game.currentActions.unshift(data);
+    } else {
+      game.currentActions = [data];
+    }
     switch (data.action) {
       case actions.PLAY:
-        // play(game, data.tile, data.line);
+        // note: this makes the game not work for double sets above 9
+        const tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
+        if ("line" in game.players[data.line - 1]) {
+          game.players[data.line - 1].line.push(tile);
+        } else {
+          game.players[data.line - 1].line = [tile]
+        }
+        let inHand = false;
+        for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
+          if (tile.equals(game.players[currentPlayerIndex].hand[i])) {
+            inHand = true;
+            game.players[currentPlayerIndex].hand.splice(i, 1);
+            break;
+          }
+        }
+        if (!inHand) {
+          throw new functions.https.HttpsError(
+            'invalid-argument', 'Can\'t play tile not in hand.');
+        }
+        game.players[currentPlayerIndex].hand.splice()
         break;
       case actions.DRAW:
+        game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
+        game.boneyard.splice(0, 1);
         // draw(game);
         break;
       case actions.PASS:
         // can only pass if you've either played or drawn
         if (!game.hasOwnProperty("currentActions")) {
-          return new functions.https.HttpsError(
-              'invalid-argument', 'Can\'t pass without drawing or playing.');
+          throw new functions.https.HttpsError(
+              'invalid-argument', 'Can\'t pass without playing or drawing.');
         }
         let playedOrDrew = false;
         for (let i = 0; i < game.currentActions.length; i++) {
-          if (game.currentActions.action === actions.PLAY ||
-              game.currentActions.action === actions.DRAW) {
+          if (game.currentActions[i].action === actions.PLAY ||
+              game.currentActions[i].action === actions.DRAW) {
             playedOrDrew = true;
             break;
           }
         }
         if (!playedOrDrew) {
-          return new functions.https.HttpsError(
-              'invalid-argument', 'Can\'t pass without drawing or playing.');
+          throw new functions.https.HttpsError(
+              'invalid-argument', 'Can\'t pass without playing or drawing.');
+        }
+        // check for win condition
+        if (game.players[currentPlayerIndex].walking &&
+            !("hand" in game.players[currentPlayerIndex])) {
+          // win!
+          functions.logger.log("win");
+          for (let i = 0; i < game.players.length; i++) {
+            let roundScore = 0;
+            if ("hand" in game.players[i]) {
+              for (let j = 0; j < game.players[i].hand.length; j++) {
+                const tile = game.players[i].hand[j];
+                roundScore += tile.end1 + tile.end2;
+              }
+            }
+            game.players[i].score += roundScore;
+          }
         }
         const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1
         game.currentPlayer = `Player ${nextPlayer}`;
@@ -165,12 +213,10 @@ exports.takeAction = functions.https.onCall((data, context) => {
         return new functions.https.HttpsError(
             'invalid-argument', 'Invalid action specified.');
     }
-    if ("currentActions" in game) {
-      game.currentActions.unshift(data);
-    } else {
-      game.currentActions = [data];
-    }
-    admin.database().ref(`game/${data.gameId}`).set(game);
-  }, function(error) { functions.logger.log(error) });
+    admin.database().ref(`game/${gameId}`).set(game);
+  })
+  .catch((error) => {
+    throw error;
+  });
 });
 
