@@ -38,7 +38,7 @@ class App extends React.Component {
     var startGame = functions.httpsCallable('startGame');
     startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
     }).catch((error) => {
-      alert(`error: ${JSON.stringify(error)}`);
+      alert(`Code: ${error.code}. Message: ${error.message}`);
     });
   }
 
@@ -92,9 +92,9 @@ function getPlayerRowFun(currentPlayer) {
       <tr>
         <td>{isCurrentPlayer? <u>{player.name}</u> : player.name}</td>
         <td>{player.score}</td>
-        <td>{line}</td>
         <td>{player.penny? 'yes': 'no'}</td>
         <td>{player.walking? 'yes': 'no'}</td>
+        <td>{line}</td>
       </tr>);
   }
 }
@@ -109,9 +109,9 @@ class Playfield extends React.Component {
             <tr>
               <th>Name</th>
               <th>Score</th>
-              <th>Line</th>
               <th>Penny?</th>
               <th>Walking?</th>
+              <th style={{whiteSpace: 'nowrap'}}>Line</th>
             </tr>
             {players}
           </table>
@@ -151,7 +151,7 @@ class Hand extends React.Component {
     }
     takeAction(request).then((response) => {
     }).catch((error) => {
-      alert(`error: ${JSON.stringify(error)}`);
+      alert(`Code: ${error.code}. Message: ${error.message}`);
     });
   }
 
@@ -159,13 +159,16 @@ class Hand extends React.Component {
     for (let i = 0; i < this.props.players.length; i++) {
       if (this.props.players[i].name === this.props.currentPlayer) {
         let handleClick = this.handleClick;
-        let hand = this.props.players[i].hand.map(function(tile) {
-          return (
-              <td>
-                <button onClick={handleClick}>{tile.end1}{tile.end2}
-                </button>
-              </td>);
-        });
+        let hand = "empty";
+        if ("hand" in this.props.players[i]) {
+          hand = this.props.players[i].hand.map(function(tile) {
+            return (
+                <td>
+                  <button onClick={handleClick}>{tile.end1}{tile.end2}
+                  </button>
+                </td>);
+          });
+        }
         return (
             <p>
               <b>{this.props.currentPlayer}'s hand:</b>
