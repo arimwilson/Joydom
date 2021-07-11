@@ -40,6 +40,11 @@ class App extends React.Component {
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
     });
+    var startRound = functions.httpsCallable('startRound');
+    startRound({ gameId: gameId }).then((response) => {
+    }).catch((error) => {
+      alert(`Code: ${error.code}. Message: ${error.message}`);
+    });
   }
 
   render() {

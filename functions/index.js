@@ -2,6 +2,22 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
+exports.startGame = functions.https.onCall((data, context) => {
+  let players = Array(data.numPlayers);
+  for (let playerNumber = 1; playerNumber <= players.length;
+       ++playerNumber) {
+    players[playerNumber - 1] = {
+      name: "Player " + playerNumber,
+      score: 0,
+    };
+  }
+  const game = {
+    players: players,
+    unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+  };
+  admin.database().ref(`game/${data.gameId}`).set(game);
+});
+
 class DominoTile {
   constructor(end1, end2) {
     this.end1 = end1;
@@ -61,6 +77,61 @@ function isDoubleFun(currentDouble) {
   return (tile) => tile.end1 === currentDouble && tile.end2 === currentDouble;
 }
 
+exports.startRound = functions.https.onCall((data, context) => {
+  admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+    var game = snapshot.val();
+    // double 9 set has 55 tiles - (n+1)(n=2)/2
+    const tiles = Array(55);
+    for (let end1 = 0, i = 0; end1 <= 9; ++end1) {
+      for (let end2 = 0; end2 <= end1; ++end2) {
+        tiles[i++] = new DominoTile(end1, end2);
+      }
+    }
+    const shuffled_tiles = getShuffledArray(tiles);
+    const tiles_per_player = getTilesPerPlayer(game.players.length);
+    for (let i = 0; i < game.players.length; ++i) {
+      const tile_index = i * tiles_per_player;
+      game.players[i].hand = shuffled_tiles.slice(
+          tile_index, tile_index + tiles_per_player);
+      game.players[i].penny = false;
+      game.players[i].walking = false;
+    }
+    game.boneyard = shuffled_tiles.slice(game.players.length * tiles_per_player);
+    // find current double in players hands and play it and set current player. if
+    // it's not there, check for the next unsuded double. if none of the unused
+    // doubles are in player hands, add tiles to player hands from boneyard until
+    // they have one.
+    let foundDouble = false;
+    while (!foundDouble) {
+      for (let i = 0; i < game.unusedDoubles.length; i++) {
+        game.currentDouble = game.unusedDoubles[i];
+        for (let j = 0; j < game.players.length; j++) {
+          let doubleIndex = game.players[j].hand.findIndex(isDoubleFun(game.currentDouble));
+          if (doubleIndex !== -1) {
+            game.players[j].line = [new DominoTile(
+                game.currentDouble, game.currentDouble)];
+            game.players[j].hand.splice(doubleIndex, 1);
+            game.currentPlayer = game.players[j].name;
+            game.unusedDoubles.splice(i, 1);
+            foundDouble = true;
+            break;
+          }
+        }
+        if (foundDouble) break;
+      }
+      if (foundDouble) break;
+      for (let i = 0; i < game.players.length; i++) {
+        game.players[i].hand.push(game.boneyard[0]);
+        game.boneyard.splice(0, 1);
+      }
+    }
+    admin.database().ref(`game/${data.gameId}`).set(game);
+  })
+  .catch((error) => {
+    throw error;
+  });
+});
+
 const actions = {
   NONE: 0,
   PLAY: 1,
@@ -68,74 +139,6 @@ const actions = {
   PASS: 3,
   WALKING: 4,
 }
-
-exports.startGame = functions.https.onCall((data, context) => {
-  // double 9 set has 55 tiles - (n+1)(n=2)/2
-  const tiles = Array(55);
-  for (let end1 = 0, i = 0; end1 <= 9; ++end1) {
-    for (let end2 = 0; end2 <= end1; ++end2) {
-      tiles[i++] = new DominoTile(end1, end2);
-    }
-  }
-  const shuffled_tiles = getShuffledArray(tiles);
-  const tiles_per_player = getTilesPerPlayer(data.numPlayers);
-  let players = Array(data.numPlayers);
-  for (let playerNumber = 1; playerNumber <= players.length;
-       ++playerNumber) {
-    const tile_index = (playerNumber - 1) * tiles_per_player;
-    players[playerNumber - 1] = {
-      name: "Player " + playerNumber,
-      score: 0,
-      hand: shuffled_tiles.slice(tile_index, tile_index + tiles_per_player),
-      penny: false,
-      walking: false,
-    };
-  }
-  const game = {
-    players: players,
-    unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
-    boneyard: shuffled_tiles.slice(data.numPlayers * tiles_per_player)
-  };
-  admin.database().ref(`game/${data.gameId}`).set(game);
-  // find current double in players hands and play it and set current player. if
-  // it's not there, check for the next unsuded double. if none of the unused
-  // doubles are in player hands, add tiles to player hands from boneyard until
-  // they have one.
-  let foundDouble = false;
-  while (!foundDouble) {
-    for (let i = 0; i < game.unusedDoubles.length; i++) {
-      game.currentDouble = game.unusedDoubles[i];
-      for (let j = 0; j < game.players.length; j++) {
-        let doubleIndex = game.players[j].hand.findIndex(isDoubleFun(game.currentDouble));
-        if (doubleIndex !== -1) {
-          game.players[j].line = [new DominoTile(
-              game.currentDouble, game.currentDouble)];
-          game.players[j].hand.splice(doubleIndex, 1);
-          game.currentPlayer = game.players[j].name;
-          game.unusedDoubles.splice(i, 1);
-          foundDouble = true;
-          break;
-        }
-      }
-      if (foundDouble) break;
-    }
-    if (foundDouble) break;
-    for (let i = 0; i < game.players.length; i++) {
-      game.players[i].hand.push(game.boneyard[0]);
-      game.boneyard.splice(0, 1);
-    }
-  }
-  admin.database().ref(`game/${data.gameId}`).set(game);
-});
-
-exports.startRound = functions.https.onCall((data, context) => {
-  // const writeResult = await admin.firestore().collection("games").add({
-  //   numPlayers: 4,
-  //   currentDouble: 9,
-  // });
-  response.json({
-  });
-});
 
 exports.takeAction = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
