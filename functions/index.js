@@ -58,15 +58,12 @@ function getTilesPerPlayer(numPlayers) {
     case 3:
     case 4:
       return 9;
-      break;
     case 5:
     case 6:
       return 8;
-      break;
     case 7:
     case 8:
       return 6;
-      break;
     default:
       throw new functions.https.HttpsError(
           "invalid-argument", "Too few or many players specified.");
@@ -85,17 +82,17 @@ function startRound(game) {
       tiles[i++] = new DominoTile(end1, end2);
     }
   }
-  const shuffled_tiles = getShuffledArray(tiles);
-  const tiles_per_player = getTilesPerPlayer(game.players.length);
+  const shuffledTiles = getShuffledArray(tiles);
+  const tilesPerPlayer = getTilesPerPlayer(game.players.length);
   for (let i = 0; i < game.players.length; ++i) {
-    const tile_index = i * tiles_per_player;
-    game.players[i].hand = shuffled_tiles.slice(
-        tile_index, tile_index + tiles_per_player);
+    const tileIndex = i * tilesPerPlayer;
+    game.players[i].hand = shuffledTiles.slice(
+        tileIndex, tileIndex + tilesPerPlayer);
     game.players[i].penny = false;
     game.players[i].walking = false;
     delete game.players[i].line;
   }
-  game.boneyard = shuffled_tiles.slice(game.players.length * tiles_per_player);
+  game.boneyard = shuffledTiles.slice(game.players.length * tilesPerPlayer);
   // find current double in players hands and play it and set current player. if
   // it's not there, check for the next unsuded double. if none of the unused
   // doubles are in player hands, add tiles to player hands from boneyard until
@@ -163,7 +160,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
       game.currentActions = [data];
     }
     switch (data.action) {
-      case actions.PLAY:
+      case actions.PLAY: {
         // note: this makes the game not work for double sets above 9
         const tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
         let inHand = false;
@@ -200,7 +197,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         game.players[currentPlayerIndex].hand.splice();
         break;
-      case actions.DRAW:
+      }
+      case actions.DRAW: {
         if ("hand" in game.players[currentPlayerIndex]) {
           game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
         } else {
@@ -208,9 +206,10 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         game.boneyard.splice(0, 1);
         break;
-      case actions.PASS:
+      }
+      case actions.PASS: {
         // can only pass if you've either played or drawn
-        if (!game.hasOwnProperty("currentActions")) {
+        if (!("currentActions" in game)) {
           throw new functions.https.HttpsError(
               "invalid-argument", "Can't pass without playing or drawing.");
         }
@@ -247,12 +246,15 @@ exports.takeAction = functions.https.onCall((data, context) => {
         game.currentPlayer = `Player ${nextPlayer}`;
         delete game.currentActions;
         break;
-      case actions.WALKING:
+      }
+      case actions.WALKING: {
         game.players[currentPlayerIndex].walking = true;
         break;
-      default:
+      }
+      default: {
         return new functions.https.HttpsError(
             "invalid-argument", "Invalid action specified.");
+      }
     }
     return admin.database().ref(`game/${gameId}`).set(game);
   })
