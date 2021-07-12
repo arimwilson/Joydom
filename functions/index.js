@@ -3,9 +3,9 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 exports.startGame = functions.https.onCall((data, context) => {
-  let players = Array(data.numPlayers);
+  const players = Array(data.numPlayers);
   for (let playerNumber = 1; playerNumber <= players.length;
-       ++playerNumber) {
+    ++playerNumber) {
     players[playerNumber - 1] = {
       name: "Player " + playerNumber,
       score: 0,
@@ -42,7 +42,7 @@ class DominoTile {
 }
 
 function getShuffledArray(arr) {
-  var shuffled = arr.slice(0), i = arr.length, temp, index;
+  const shuffled = arr.slice(0); let i = arr.length; let temp; let index;
   while (i--) {
     index = Math.floor((i + 1) * Math.random());
     temp = shuffled[index];
@@ -69,7 +69,7 @@ function getTilesPerPlayer(numPlayers) {
       break;
     default:
       throw new functions.https.HttpsError(
-          'invalid-argument', 'Too few or many players specified.');
+          "invalid-argument", "Too few or many players specified.");
   }
 }
 
@@ -105,7 +105,8 @@ function startRound(game) {
     for (let i = 0; i < game.unusedDoubles.length; i++) {
       game.currentDouble = game.unusedDoubles[i];
       for (let j = 0; j < game.players.length; j++) {
-        let doubleIndex = game.players[j].hand.findIndex(isDoubleFun(game.currentDouble));
+        const doubleIndex = game.players[j].hand.findIndex(isDoubleFun(
+            game.currentDouble));
         if (doubleIndex !== -1) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
@@ -128,13 +129,13 @@ function startRound(game) {
 // https://stackoverflow.com/questions/43690369/unhandled-rejection-from-cloud-function-but-it-runs-sometimes
 exports.startRound = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
-    let game = snapshot.val();
+    const game = snapshot.val();
     startRound(game);
     return admin.database().ref(`game/${data.gameId}`).set(game);
   })
-  .catch((error) => {
-    throw error;
-  });
+      .catch((error) => {
+        throw error;
+      });
 });
 
 const actions = {
@@ -143,11 +144,11 @@ const actions = {
   DRAW: 2,
   PASS: 3,
   WALKING: 4,
-}
+};
 
 exports.takeAction = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
-    var game = snapshot.val();
+    const game = snapshot.val();
     const gameId = data.gameId;
     let currentPlayerIndex = 0;
     for (; currentPlayerIndex < game.players.length; currentPlayerIndex++) {
@@ -175,7 +176,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         if (!inHand) {
           throw new functions.https.HttpsError(
-            'invalid-argument', 'Can\'t play tile not in hand.');
+              "invalid-argument", "Can't play tile not in hand.");
         }
         if ("line" in game.players[data.line - 1]) {
           const line = game.players[data.line - 1].line;
@@ -183,7 +184,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
             tile.swapIfNeeded(line[line.length - 1]);
           } else {
             throw new functions.https.HttpsError(
-                'invalid-argument', 'Can\'t play on non-matching tile.');
+                "invalid-argument", "Can't play on non-matching tile.");
           }
           game.players[data.line - 1].line.push(tile);
         } else {
@@ -193,11 +194,11 @@ exports.takeAction = functions.https.onCall((data, context) => {
             tile.swapIfNeeded(currentDouble);
           } else {
             throw new functions.https.HttpsError(
-                'invalid-argument', 'Can\'t play on non-matching tile.');
+                "invalid-argument", "Can't play on non-matching tile.");
           }
-          game.players[data.line - 1].line = [tile]
+          game.players[data.line - 1].line = [tile];
         }
-        game.players[currentPlayerIndex].hand.splice()
+        game.players[currentPlayerIndex].hand.splice();
         break;
       case actions.DRAW:
         if ("hand" in game.players[currentPlayerIndex]) {
@@ -211,7 +212,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // can only pass if you've either played or drawn
         if (!game.hasOwnProperty("currentActions")) {
           throw new functions.https.HttpsError(
-              'invalid-argument', 'Can\'t pass without playing or drawing.');
+              "invalid-argument", "Can't pass without playing or drawing.");
         }
         let playedOrDrew = false;
         for (let i = 0; i < game.currentActions.length; i++) {
@@ -223,7 +224,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         if (!playedOrDrew) {
           throw new functions.https.HttpsError(
-              'invalid-argument', 'Can\'t pass without playing or drawing.');
+              "invalid-argument", "Can't pass without playing or drawing.");
         }
         // check for win condition
         if (game.players[currentPlayerIndex].walking &&
@@ -242,7 +243,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
           startRound(game);
           break;
         }
-        const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1
+        const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1;
         game.currentPlayer = `Player ${nextPlayer}`;
         delete game.currentActions;
         break;
@@ -251,12 +252,12 @@ exports.takeAction = functions.https.onCall((data, context) => {
         break;
       default:
         return new functions.https.HttpsError(
-            'invalid-argument', 'Invalid action specified.');
+            "invalid-argument", "Invalid action specified.");
     }
     return admin.database().ref(`game/${gameId}`).set(game);
   })
-  .catch((error) => {
-    throw error;
-  });
+      .catch((error) => {
+        throw error;
+      });
 });
 
