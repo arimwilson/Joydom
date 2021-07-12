@@ -77,54 +77,57 @@ function isDoubleFun(currentDouble) {
   return (tile) => tile.end1 === currentDouble && tile.end2 === currentDouble;
 }
 
-exports.startRound = functions.https.onCall((data, context) => {
-  admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
-    var game = snapshot.val();
-    // double 9 set has 55 tiles - (n+1)(n=2)/2
-    const tiles = Array(55);
-    for (let end1 = 0, i = 0; end1 <= 9; ++end1) {
-      for (let end2 = 0; end2 <= end1; ++end2) {
-        tiles[i++] = new DominoTile(end1, end2);
-      }
+function startRound(game) {
+  // double 9 set has 55 tiles - (n+1)(n=2)/2
+  const tiles = Array(55);
+  for (let end1 = 0, i = 0; end1 <= 9; ++end1) {
+    for (let end2 = 0; end2 <= end1; ++end2) {
+      tiles[i++] = new DominoTile(end1, end2);
     }
-    const shuffled_tiles = getShuffledArray(tiles);
-    const tiles_per_player = getTilesPerPlayer(game.players.length);
-    for (let i = 0; i < game.players.length; ++i) {
-      const tile_index = i * tiles_per_player;
-      game.players[i].hand = shuffled_tiles.slice(
-          tile_index, tile_index + tiles_per_player);
-      game.players[i].penny = false;
-      game.players[i].walking = false;
-    }
-    game.boneyard = shuffled_tiles.slice(game.players.length * tiles_per_player);
-    // find current double in players hands and play it and set current player. if
-    // it's not there, check for the next unsuded double. if none of the unused
-    // doubles are in player hands, add tiles to player hands from boneyard until
-    // they have one.
-    let foundDouble = false;
-    while (!foundDouble) {
-      for (let i = 0; i < game.unusedDoubles.length; i++) {
-        game.currentDouble = game.unusedDoubles[i];
-        for (let j = 0; j < game.players.length; j++) {
-          let doubleIndex = game.players[j].hand.findIndex(isDoubleFun(game.currentDouble));
-          if (doubleIndex !== -1) {
-            game.players[j].line = [new DominoTile(
-                game.currentDouble, game.currentDouble)];
-            game.players[j].hand.splice(doubleIndex, 1);
-            game.currentPlayer = game.players[j].name;
-            game.unusedDoubles.splice(i, 1);
-            foundDouble = true;
-            break;
-          }
+  }
+  const shuffled_tiles = getShuffledArray(tiles);
+  const tiles_per_player = getTilesPerPlayer(game.players.length);
+  for (let i = 0; i < game.players.length; ++i) {
+    const tile_index = i * tiles_per_player;
+    game.players[i].hand = shuffled_tiles.slice(
+        tile_index, tile_index + tiles_per_player);
+    game.players[i].penny = false;
+    game.players[i].walking = false;
+    delete game.players[i].line;
+  }
+  game.boneyard = shuffled_tiles.slice(game.players.length * tiles_per_player);
+  // find current double in players hands and play it and set current player. if
+  // it's not there, check for the next unsuded double. if none of the unused
+  // doubles are in player hands, add tiles to player hands from boneyard until
+  // they have one.
+  let foundDouble = false;
+  while (!foundDouble) {
+    for (let i = 0; i < game.unusedDoubles.length; i++) {
+      game.currentDouble = game.unusedDoubles[i];
+      for (let j = 0; j < game.players.length; j++) {
+        let doubleIndex = game.players[j].hand.findIndex(isDoubleFun(game.currentDouble));
+        if (doubleIndex !== -1) {
+          game.players[j].hand.splice(doubleIndex, 1);
+          game.currentPlayer = game.players[j].name;
+          game.unusedDoubles.splice(i, 1);
+          foundDouble = true;
+          break;
         }
-        if (foundDouble) break;
       }
       if (foundDouble) break;
-      for (let i = 0; i < game.players.length; i++) {
-        game.players[i].hand.push(game.boneyard[0]);
-        game.boneyard.splice(0, 1);
-      }
     }
+    if (foundDouble) break;
+    for (let i = 0; i < game.players.length; i++) {
+      game.players[i].hand.push(game.boneyard[0]);
+      game.boneyard.splice(0, 1);
+    }
+  }
+}
+
+exports.startRound = functions.https.onCall((data, context) => {
+  admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+    let game = snapshot.val();
+    startRound(game);
     admin.database().ref(`game/${data.gameId}`).set(game);
   })
   .catch((error) => {
@@ -174,12 +177,12 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         if ("line" in game.players[data.line - 1]) {
           const line = game.players[data.line - 1].line;
-          if (tile.match(line[line.length - 1])) {
+          /*if (tile.match(line[line.length - 1])) {
             tile.swapIfNeeded(line[line.length - 1]);
           } else {
             throw new functions.https.HttpsError(
                 'invalid-argument', 'Can\'t play on non-matching tile.');
-          }
+          }*/
           game.players[data.line - 1].line.push(tile);
         } else {
           const currentDouble = new DominoTile(
@@ -195,9 +198,12 @@ exports.takeAction = functions.https.onCall((data, context) => {
         game.players[currentPlayerIndex].hand.splice()
         break;
       case actions.DRAW:
-        game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
+        if ("hand" in game.players[currentPlayerIndex]) {
+          game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
+        } else {
+          game.players[currentPlayerIndex].hand = [game.boneyard[0]];
+        }
         game.boneyard.splice(0, 1);
-        // draw(game);
         break;
       case actions.PASS:
         // can only pass if you've either played or drawn
@@ -221,7 +227,6 @@ exports.takeAction = functions.https.onCall((data, context) => {
         if (game.players[currentPlayerIndex].walking &&
             !("hand" in game.players[currentPlayerIndex])) {
           // win!
-          functions.logger.log("win");
           for (let i = 0; i < game.players.length; i++) {
             let roundScore = 0;
             if ("hand" in game.players[i]) {
@@ -232,6 +237,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
             }
             game.players[i].score += roundScore;
           }
+          startRound(game);
+          break;
         }
         const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1
         game.currentPlayer = `Player ${nextPlayer}`;
