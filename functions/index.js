@@ -124,6 +124,8 @@ function startRound(game) {
   }
 }
 
+// TODO(ariw): Fix broken function lifecycle with
+// https://stackoverflow.com/questions/43690369/unhandled-rejection-from-cloud-function-but-it-runs-sometimes
 exports.startRound = functions.https.onCall((data, context) => {
   admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     let game = snapshot.val();
