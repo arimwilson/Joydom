@@ -15,7 +15,7 @@ exports.startGame = functions.https.onCall((data, context) => {
     players: players,
     unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
   };
-  admin.database().ref(`game/${data.gameId}`).set(game);
+  return admin.database().ref(`game/${data.gameId}`).set(game);
 });
 
 class DominoTile {
@@ -127,10 +127,10 @@ function startRound(game) {
 // TODO(ariw): Fix broken function lifecycle with
 // https://stackoverflow.com/questions/43690369/unhandled-rejection-from-cloud-function-but-it-runs-sometimes
 exports.startRound = functions.https.onCall((data, context) => {
-  admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+  return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     let game = snapshot.val();
     startRound(game);
-    admin.database().ref(`game/${data.gameId}`).set(game);
+    return admin.database().ref(`game/${data.gameId}`).set(game);
   })
   .catch((error) => {
     throw error;
@@ -179,12 +179,12 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         if ("line" in game.players[data.line - 1]) {
           const line = game.players[data.line - 1].line;
-          /*if (tile.match(line[line.length - 1])) {
+          if (tile.match(line[line.length - 1])) {
             tile.swapIfNeeded(line[line.length - 1]);
           } else {
             throw new functions.https.HttpsError(
                 'invalid-argument', 'Can\'t play on non-matching tile.');
-          }*/
+          }
           game.players[data.line - 1].line.push(tile);
         } else {
           const currentDouble = new DominoTile(
@@ -253,7 +253,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         return new functions.https.HttpsError(
             'invalid-argument', 'Invalid action specified.');
     }
-    admin.database().ref(`game/${gameId}`).set(game);
+    return admin.database().ref(`game/${gameId}`).set(game);
   })
   .catch((error) => {
     throw error;
