@@ -30,11 +30,6 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    database.ref(`game/${gameId}`).on('value', (snapshot) => {
-      this.setState({game: snapshot.val(), });
-    }, (errorObject) => {
-      console.log(errorObject);
-    });
     var startGame = functions.httpsCallable('startGame');
     startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
     }).catch((error) => {
@@ -42,6 +37,11 @@ class App extends React.Component {
     });
     var startRound = functions.httpsCallable('startRound');
     startRound({ gameId: gameId }).then((response) => {
+      database.ref(`game/${gameId}`).on('value', (snapshot) => {
+        this.setState({game: snapshot.val(), });
+      }, (errorObject) => {
+        console.log(errorObject);
+      });
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
     });
