@@ -105,10 +105,13 @@ function startRound(game) {
         const doubleIndex = game.players[j].hand.findIndex(isDoubleFun(
             game.currentDouble));
         if (doubleIndex !== -1) {
+          functions.logger.log(i);
+          functions.logger.log(game.currentDouble);
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
+          functions.logger.log(game.unusedDoubles);
           break;
         }
       }
@@ -122,17 +125,15 @@ function startRound(game) {
   }
 }
 
-// TODO(ariw): Fix broken function lifecycle with
-// https://stackoverflow.com/questions/43690369/unhandled-rejection-from-cloud-function-but-it-runs-sometimes
 exports.startRound = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     const game = snapshot.val();
     startRound(game);
     return admin.database().ref(`game/${data.gameId}`).set(game);
   })
-      .catch((error) => {
-        throw error;
-      });
+  .catch((error) => {
+      throw error;
+  });
 });
 
 const actions = {
@@ -258,8 +259,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
     }
     return admin.database().ref(`game/${gameId}`).set(game);
   })
-      .catch((error) => {
-        throw error;
-      });
+  .catch((error) => {
+    throw error;
+  });
 });
 

@@ -21,7 +21,11 @@ if (window.location.hostname === "localhost" ||
   database.useEmulator(`${host}`, 9000);
 }
 
-const gameId = 123;
+var gameId;
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min) + min);
+}
 
 class App extends React.Component {
   constructor(props) {
@@ -31,6 +35,11 @@ class App extends React.Component {
 
   componentDidMount() {
     var startGame = functions.httpsCallable('startGame');
+    let randomGameId = getRandomInt(0, 1000);
+    gameId = prompt('Game id? ', randomGameId);
+    if (gameId === null) {
+      gameId = randomGameId;
+    }
     startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
@@ -51,9 +60,9 @@ class App extends React.Component {
     return (
       <div className="App">
         <header>
-          <h2>Joyce Dominoes</h2>
+          <h2>Joyce Dominoes Game {gameId}</h2>
         </header>
-        Pennies and new rounds are not yet implemented. Chaos reigns.
+        Pennies are not yet implemented. Chaos reigns.
         {this.state.game !== null &&
           <div>
             <section className="GameInfo">
