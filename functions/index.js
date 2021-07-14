@@ -89,7 +89,7 @@ function startRound(game) {
     game.players[i].hand = shuffledTiles.slice(
         tileIndex, tileIndex + tilesPerPlayer);
     game.players[i].penny = false;
-    game.players[i].walking = false;
+    delete game.players[i].walking;
     delete game.players[i].line;
   }
   game.boneyard = shuffledTiles.slice(game.players.length * tilesPerPlayer);
@@ -105,13 +105,10 @@ function startRound(game) {
         const doubleIndex = game.players[j].hand.findIndex(isDoubleFun(
             game.currentDouble));
         if (doubleIndex !== -1) {
-          functions.logger.log(i);
-          functions.logger.log(game.currentDouble);
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
-          functions.logger.log(game.unusedDoubles);
           break;
         }
       }
@@ -123,6 +120,7 @@ function startRound(game) {
       game.boneyard.splice(0, 1);
     }
   }
+  game.turn = 0;
 }
 
 exports.startRound = functions.https.onCall((data, context) => {
@@ -233,7 +231,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
               "invalid-argument", "Can't pass without playing or drawing.");
         }
         // check for win condition
-        if (game.players[currentPlayerIndex].walking &&
+        if (("walking" in game.players[currentPlayerIndex]) &&
+            game.players[currentPlayerIndex].walking === game.turn - 1 &&
             !("hand" in game.players[currentPlayerIndex])) {
           // win!
           for (let i = 0; i < game.players.length; i++) {
@@ -277,14 +276,15 @@ exports.takeAction = functions.https.onCall((data, context) => {
           game.players[currentPlayerIndex].penny = true;
         }
         const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1;
-        // TODO(ariw): Implement walking such that it lasts for one whole set of
-        // player turns.
+        if (nextPlayer === 1) {
+          game.turn++;
+        }
         game.currentPlayer = `Player ${nextPlayer}`;
         delete game.currentActions;
         break;
       }
       case actions.WALKING: {
-        game.players[currentPlayerIndex].walking = true;
+        game.players[currentPlayerIndex].walking = game.turn;
         break;
       }
       default: {

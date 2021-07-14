@@ -35,12 +35,20 @@ class App extends React.Component {
 
   componentDidMount() {
     var startGame = functions.httpsCallable('startGame');
-    let randomGameId = getRandomInt(0, 1000);
-    gameId = prompt('Game id? ', randomGameId);
+    let defaultGameId = getRandomInt(0, 1000);
+    gameId = prompt('Game id? ', defaultGameId);
     if (gameId === null) {
-      gameId = randomGameId;
+      gameId = defaultGameId;
     }
-    startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
+    let defaultNumPlayers = "4";
+    let numPlayers = prompt('Number of players? ', defaultNumPlayers);
+    if (numPlayers === null) {
+      numPlayers = defaultNumPlayers;
+    }
+    startGame({
+      gameId: gameId,
+      numPlayers: parseInt(numPlayers),
+    }).then((response) => {
 			var startRound = functions.httpsCallable('startRound');
 			startRound({ gameId: gameId }).then((response) => {
 				database.ref(`game/${gameId}`).on('value', (snapshot) => {
@@ -67,7 +75,8 @@ class App extends React.Component {
             <section className="GameInfo">
               <GameInfo
                   currentDouble={this.state.game.currentDouble}
-                  unusedDoubles={this.state.game.unusedDoubles}/>
+                  unusedDoubles={this.state.game.unusedDoubles}
+                  turn={this.state.game.turn}/>
             </section>
             <section className="Playfield">
               <Playfield
@@ -88,7 +97,12 @@ class App extends React.Component {
 
 class GameInfo extends React.Component {
   render() {
-    return (<p><b>Round</b>: Double: {this.props.currentDouble}, Unused: {this.props.unusedDoubles}</p>);
+    return (
+        <p>
+          <b>Round</b>:
+          Double: {this.props.currentDouble}, Turn: {this.props.turn},
+          Unused: {this.props.unusedDoubles}
+        </p>);
   }
 }
 
@@ -107,7 +121,7 @@ function getPlayerRowFun(currentPlayer) {
         <td>{isCurrentPlayer? <u>{player.name}</u> : player.name}</td>
         <td>{player.score}</td>
         <td>{player.penny? 'yes': 'no'}</td>
-        <td>{player.walking? 'yes': 'no'}</td>
+        <td>{("walking" in player)? player.walking: 'no'}</td>
         <td>{line}</td>
       </tr>);
   }
