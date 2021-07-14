@@ -41,16 +41,16 @@ class App extends React.Component {
       gameId = randomGameId;
     }
     startGame({ gameId: gameId, numPlayers: 4 }).then((response) => {
-    }).catch((error) => {
-      alert(`Code: ${error.code}. Message: ${error.message}`);
-    });
-    var startRound = functions.httpsCallable('startRound');
-    startRound({ gameId: gameId }).then((response) => {
-      database.ref(`game/${gameId}`).on('value', (snapshot) => {
-        this.setState({game: snapshot.val(), });
-      }, (errorObject) => {
-        console.log(errorObject);
-      });
+			var startRound = functions.httpsCallable('startRound');
+			startRound({ gameId: gameId }).then((response) => {
+				database.ref(`game/${gameId}`).on('value', (snapshot) => {
+					this.setState({game: snapshot.val(), });
+				}, (errorObject) => {
+					console.log(errorObject);
+				});
+			}).catch((error) => {
+				alert(`Code: ${error.code}. Message: ${error.message}`);
+			});
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
     });
@@ -62,7 +62,6 @@ class App extends React.Component {
         <header>
           <h2>Joyce Dominoes Game {gameId}</h2>
         </header>
-        Pennies are not yet implemented. Chaos reigns.
         {this.state.game !== null &&
           <div>
             <section className="GameInfo">
