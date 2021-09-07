@@ -33,6 +33,10 @@ class App extends React.Component {
     this.state = { page: "intro", };
   }
 
+  play = () => {
+    this.setState({page: "play"});
+  }
+
   render() {
     let page;
     if (this.state.page === "intro") {
@@ -46,13 +50,17 @@ class App extends React.Component {
           <h2>Joyce Dominoes</h2>
         </header>
         {page}
+        <button onClick={this.play}>Play game</button>
       </div>
     );
   }
 }
 
 function IntroPage(props) {
-  return (<div>Welcome to Joyce Dominoes!</div>);
+  return (
+    <div>Welcome to Joyce Dominoes!
+    </div>
+  );
 }
 
 class PlayPage extends React.Component {
