@@ -107,6 +107,8 @@ function startRound(game) {
         if (doubleIndex !== -1) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
+          game.currentActions = [
+            {action: actions.PLAY, tile: game.currentDouble * 11, line: j+1}];
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -226,10 +228,13 @@ exports.takeAction = functions.https.onCall((data, context) => {
       }
       case actions.PASS: {
         // can only pass if you've either played or drawn
+        // TODO(ariw): ensure that you've played at least one tile if you have
+        // one that you can play.
         if (!("currentActions" in game)) {
           throw new functions.https.HttpsError(
               "invalid-argument", "Can't pass without playing or drawing.");
         }
+        // can only pass if you don't have any tiles to play
         // check for win condition
         if (("walking" in game.players[currentPlayerIndex]) &&
             game.players[currentPlayerIndex].walking === game.turn - 1 &&
