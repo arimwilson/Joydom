@@ -30,6 +30,23 @@ function getRandomInt(min, max) {
 class App extends React.Component {
   constructor(props) {
     super(props);
+  }
+
+  render() {
+    return (
+      <div className="App">
+        <header>
+          <h2>Joyce Dominoes</h2>
+        </header>
+        <PlayGamePage />
+      </div>
+    );
+  }
+}
+
+class PlayGamePage extends React.Component {
+  constructor(props) {
+    super(props);
     this.state = { game: null, }
   }
 
@@ -66,11 +83,7 @@ class App extends React.Component {
 
   render() {
     return (
-      <div className="App">
-        <header>
-          <h2>Joyce Dominoes Game {gameId}</h2>
-        </header>
-        {this.state.game !== null &&
+        this.state.game !== null &&
           <div>
             <section className="GameInfo">
               <GameInfo
@@ -89,8 +102,6 @@ class App extends React.Component {
                   players={this.state.game.players}/>
             </section>
           </div>
-        }
-      </div>
     );
   }
 }
