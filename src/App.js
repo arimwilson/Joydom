@@ -30,19 +30,32 @@ function getRandomInt(min, max) {
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { page: "intro", };
+    this.state = { page: "menu", };
   }
 
   play = () => {
     this.setState({page: "play"});
   }
 
+  about = () => {
+    this.setState({page: "about"});
+  }
+
+
   render() {
     let page;
-    if (this.state.page === "intro") {
-      page = <IntroPage />;
-    } else {
+    if (this.state.page === "menu") {
+      page = (
+        <div>
+          <MenuPage />
+          <button onClick={this.play}>Play game</button>
+          <button onClick={this.about}>How to play / about</button>
+        </div>
+      );
+    } else if (this.state.page === "play") {
       page = <PlayPage />;
+    } else {
+      page = <AboutPage />;
     }
     return (
       <div className="App">
@@ -50,15 +63,23 @@ class App extends React.Component {
           <h2>Joyce Dominoes</h2>
         </header>
         {page}
-        <button onClick={this.play}>Play game</button>
       </div>
     );
   }
 }
 
-function IntroPage(props) {
+function MenuPage(props) {
   return (
     <div>Welcome to Joyce Dominoes!
+    </div>
+  );
+}
+
+function AboutPage(props) {
+  return (
+    <div>
+    Joyce Dominoes is a game inspired by the memory of Joyce Wilson
+    (1933-2019).
     </div>
   );
 }
