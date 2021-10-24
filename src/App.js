@@ -33,25 +33,14 @@ class App extends React.Component {
     this.state = { page: "menu", };
   }
 
-  play = () => {
-    this.setState({page: "play"});
+  changePage = (page) => {
+    this.setState({page: page});
   }
-
-  about = () => {
-    this.setState({page: "about"});
-  }
-
 
   render() {
     let page;
     if (this.state.page === "menu") {
-      page = (
-        <div>
-          <MenuPage />
-          <button onClick={this.play}>Play game</button>
-          <button onClick={this.about}>How to play / about</button>
-        </div>
-      );
+      page = <MenuPage changePage={this.changePage} />;
     } else if (this.state.page === "play") {
       page = <PlayPage />;
     } else {
@@ -68,11 +57,28 @@ class App extends React.Component {
   }
 }
 
-function MenuPage(props) {
-  return (
-    <div>Welcome to Joyce Dominoes!
-    </div>
-  );
+class MenuPage extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  play = () => {
+    this.props.changePage("play");
+  }
+
+  about = () => {
+    this.props.changePage("about");
+  }
+
+  render() {
+    return (
+      <div>
+        Welcome to Joyce Dominoes!<br />
+        <button onClick={this.play}>Play game</button><br />
+        <button onClick={this.about}>How to play / about</button>
+      </div>
+    );
+  }
 }
 
 function AboutPage(props) {
