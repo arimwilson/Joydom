@@ -72,7 +72,7 @@ class PlayPage extends React.Component {
   componentDidMount() {
     var startGame = functions.httpsCallable('startGame');
     let defaultGameId = getRandomInt(0, 1000);
-    gameId = prompt('Game id? ', defaultGameId);
+    gameId = prompt('Game ID? ', defaultGameId);
     if (gameId === null) {
       gameId = defaultGameId;
     }
@@ -130,8 +130,9 @@ class GameInfo extends React.Component {
     return (
         <p>
           <b>Round</b>:
-          Double: {this.props.currentDouble}, Turn: {this.props.turn},
-          Unused: {this.props.unusedDoubles}
+          Turn: {this.props.turn + 1},
+          current double: {this.props.currentDouble},
+          unused doubles: {this.props.unusedDoubles}
         </p>);
   }
 }
