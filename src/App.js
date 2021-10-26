@@ -22,6 +22,7 @@ if (window.location.hostname === "localhost" ||
 }
 
 var gameId;
+var aboutPage = { __html: require('./about.html.js') };
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
@@ -84,8 +85,7 @@ class MenuPage extends React.Component {
 function AboutPage(props) {
   return (
     <div>
-    Joyce Dominoes is a game inspired by the memory of Joyce Wilson
-    (1933-2019).
+      <span dangerouslySetInnerHTML={aboutPage} />
     </div>
   );
 }
