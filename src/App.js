@@ -45,7 +45,7 @@ class App extends React.Component {
     } else if (this.state.page === "play") {
       page = <PlayPage />;
     } else {
-      page = <AboutPage />;
+      page = <AboutPage changePage={this.changePage} />;
     }
     return (
       <div className="App">
@@ -82,12 +82,23 @@ class MenuPage extends React.Component {
   }
 }
 
-function AboutPage(props) {
-  return (
-    <div>
-      <span dangerouslySetInnerHTML={aboutPage} />
-    </div>
-  );
+class AboutPage extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  menu = () => {
+    this.props.changePage("menu");
+  }
+
+  render() {
+    return (
+      <div>
+        <span dangerouslySetInnerHTML={aboutPage} />
+        <br><button onClick={this.menu}>Back</button>
+      </div>
+    );
+  }
 }
 
 class PlayPage extends React.Component {

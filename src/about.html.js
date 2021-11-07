@@ -13,11 +13,11 @@ module.exports = `
   never seen exactly replicated. Here are the rules:
 </p>
 <b>Joyce Dominoes</b><br>
-Every player receives number of bones (dominoes).
+Every player receives number of bones (dominoes).<br><br>
 <i>Setup</i>
 <ul>
 <li>Play with a 9x9 domino set.</li>
-<li>Number of players determines number of initial pieces
+<li>Number of players determines number of initial bones
 <ol>
 <li>2-4 - 9</li>
 <li>5-6 - 8</li>
