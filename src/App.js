@@ -40,11 +40,11 @@ class App extends React.Component {
 
   render() {
     let page;
-    if (this.state.page === "start") {
+    if (this.state.page === "menu") {
       page = <MenuPage changePage={this.changePage} />;
     } else if (this.state.page === "join") {
-      page = <JoinPage />;
-    } else if (this.state.page === "play") {
+      page = <JoinPage changePage={this.changePage} />;
+    } else if (this.state.page === "start") {
       page = <PlayPage />;
     } else {
       page = <AboutPage changePage={this.changePage} />;
@@ -102,6 +102,25 @@ class AboutPage extends React.Component {
     return (
       <div>
         <span dangerouslySetInnerHTML={aboutPage} />
+        <br /><button onClick={this.menu}>Back</button>
+      </div>
+    );
+  }
+}
+
+class JoinPage extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  menu = () => {
+    this.props.changePage("menu");
+  }
+
+  render() {
+    return (
+      <div>
+        Hello world!
         <br /><button onClick={this.menu}>Back</button>
       </div>
     );
