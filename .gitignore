@@ -67,3 +67,4 @@ node_modules/
 
 # Firebase API info
 src/firebase-config.js
+src/firebaseConfig.js
