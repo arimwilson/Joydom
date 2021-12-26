@@ -40,8 +40,10 @@ class App extends React.Component {
 
   render() {
     let page;
-    if (this.state.page === "menu") {
+    if (this.state.page === "start") {
       page = <MenuPage changePage={this.changePage} />;
+    } else if (this.state.page === "join") {
+      page = <JoinPage />;
     } else if (this.state.page === "play") {
       page = <PlayPage />;
     } else {
@@ -63,8 +65,12 @@ class MenuPage extends React.Component {
     super(props);
   }
 
-  play = () => {
-    this.props.changePage("play");
+  start = () => {
+    this.props.changePage("start");
+  }
+
+  join = () => {
+    this.props.changePage("join");
   }
 
   about = () => {
@@ -75,7 +81,8 @@ class MenuPage extends React.Component {
     return (
       <div>
         Welcome to Joyce Dominoes!<br />
-        <button onClick={this.play}>Play game</button><br />
+        <button onClick={this.start}>Start game</button><br />
+        <button onClick={this.join}>Join game</button><br />
         <button onClick={this.about}>How to play / about</button>
       </div>
     );
