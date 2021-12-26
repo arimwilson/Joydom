@@ -102,7 +102,7 @@ class AboutPage extends React.Component {
     return (
       <div>
         <span dangerouslySetInnerHTML={aboutPage} />
-        <br><button onClick={this.menu}>Back</button>
+        <br /><button onClick={this.menu}>Back</button>
       </div>
     );
   }
