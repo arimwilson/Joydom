@@ -42,8 +42,10 @@ class App extends React.Component {
     let page;
     if (this.state.page === "menu") {
       page = <MenuPage changePage={this.changePage} />;
-    } else if (this.state.page === "play") {
+    } else if (this.state.page === "start") {
       page = <PlayPage />;
+    } else if (this.state.page === "join") {
+      page = <JoinPage changePage={this.changePage} />;
     } else {
       page = <AboutPage changePage={this.changePage} />;
     }
@@ -63,8 +65,12 @@ class MenuPage extends React.Component {
     super(props);
   }
 
-  play = () => {
-    this.props.changePage("play");
+  start = () => {
+    this.props.changePage("start");
+  }
+
+  join = () => {
+    this.props.changePage("join");
   }
 
   about = () => {
@@ -75,7 +81,8 @@ class MenuPage extends React.Component {
     return (
       <div>
         Welcome to Joyce Dominoes!<br />
-        <button onClick={this.play}>Play game</button><br />
+        <button onClick={this.start}>Start game</button><br />
+        <button onClick={this.join}>Join game</button><br />
         <button onClick={this.about}>How to play / about</button>
       </div>
     );
@@ -95,7 +102,26 @@ class AboutPage extends React.Component {
     return (
       <div>
         <span dangerouslySetInnerHTML={aboutPage} />
-        <br><button onClick={this.menu}>Back</button>
+        <br /><button onClick={this.menu}>Back</button>
+      </div>
+    );
+  }
+}
+
+class JoinPage extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  menu = () => {
+    this.props.changePage("menu");
+  }
+
+  render() {
+    return (
+      <div>
+        Hello world!
+        <br /><button onClick={this.menu}>Back</button>
       </div>
     );
   }
@@ -201,7 +227,7 @@ class Playfield extends React.Component {
     let players = this.props.players.map(getPlayerRowFun(this.props.currentPlayer));
     return (
         <p>
-          <b>Lines:</b>
+          <b>Playfield:</b>
           <table>
             <tr>
               <th>Name</th>
