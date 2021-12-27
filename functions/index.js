@@ -250,7 +250,19 @@ exports.takeAction = functions.https.onCall((data, context) => {
             }
             game.players[i].score += roundScore;
           }
-          startRound(game);
+          // check for game win condition
+          if (game.unusedDoubles.length === 0) {
+            let winner, winningScore = 1000;
+            for (let i = 0; i < game.players.length; i++) {
+              if (game.players[i].score < winningScore) {
+                winningScore = game.players[i].score;
+                winner = game.players[i].name;
+              }
+            }
+            game.winner = winner;
+          } else {
+            startRound(game);
+          }
           break;
         }
         // if you did not play on your own and could not have; add a penny.
