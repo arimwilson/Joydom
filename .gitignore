@@ -71,6 +71,12 @@ src/firebaseConfig.js
 
 # Swap files
 *.swp
+*.swj
+*.swk
+*.swl
+*.swm
+*.swn
+*.swo
 
 # Build artifacts
 build/
