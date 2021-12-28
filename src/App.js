@@ -18,7 +18,11 @@ if (window.location.hostname === "localhost" ||
     window.location.hostname.startsWith("192.168.0")) {
   const host = window.location.hostname;
   functions.useFunctionsEmulator(`http://${host}:5001`);
-  database.useEmulator(`${host}`, 9000);
+  try {
+    database.useEmulator(`${host}`, 9000); 
+  } catch (error) {
+    // ignore repeated reinitialization errors for live development
+  }
 }
 
 var gameId;
@@ -79,31 +83,12 @@ class MenuPage extends React.Component {
 
   render() {
     return (
-      <div>
+      <span className="MenuPage">
         Welcome to Joyce Dominoes!<br />
         <button onClick={this.start}>Start game</button><br />
         <button onClick={this.join}>Join game</button><br />
         <button onClick={this.about}>How to play / about</button>
-      </div>
-    );
-  }
-}
-
-class AboutPage extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  menu = () => {
-    this.props.changePage("menu");
-  }
-
-  render() {
-    return (
-      <div>
-        <span dangerouslySetInnerHTML={aboutPage} />
-        <br /><button onClick={this.menu}>Back</button>
-      </div>
+      </span>
     );
   }
 }
@@ -119,10 +104,29 @@ class JoinPage extends React.Component {
 
   render() {
     return (
-      <div>
+      <span className="JoinPage">
         Hello world!
         <br /><button onClick={this.menu}>Back</button>
-      </div>
+      </span>
+    );
+  }
+}
+
+class AboutPage extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  menu = () => {
+    this.props.changePage("menu");
+  }
+
+  render() {
+    return (
+      <span className="AboutPage">
+        <span dangerouslySetInnerHTML={aboutPage} />
+        <br /><button onClick={this.menu}>Back</button>
+      </span>
     );
   }
 }
@@ -167,24 +171,23 @@ class PlayPage extends React.Component {
   render() {
     return (
         this.state.game !== null &&
-          <div>
-            <section className="GameInfo">
-              <GameInfo
-                  currentDouble={this.state.game.currentDouble}
-                  unusedDoubles={this.state.game.unusedDoubles}
-                  turn={this.state.game.turn}/>
-            </section>
-            <section className="Playfield">
-              <Playfield
-                  players={this.state.game.players}
-                  currentPlayer={this.state.game.currentPlayer}/>
-            </section>
-            <section className="Hand">
-              <Hand
-                  currentPlayer={this.state.game.currentPlayer}
-                  players={this.state.game.players}/>
-            </section>
-          </div>
+          <span className="PlayPage">
+            <GameInfo
+                winner={this.state.game.winner}
+                turn={this.state.game.turn}
+                currentDouble={this.state.game.currentDouble}
+                unusedDoubles={this.state.game.unusedDoubles}
+                numBones=
+                  {"boneyard" in this.state.game?
+                    this.state.game.boneyard.length: 0}
+                />
+            <Playfield
+                players={this.state.game.players}
+                currentPlayer={this.state.game.currentPlayer}/>
+            <Hand
+                currentPlayer={this.state.game.currentPlayer}
+                players={this.state.game.players}/>
+          </span>
     );
   }
 }
@@ -192,12 +195,17 @@ class PlayPage extends React.Component {
 class GameInfo extends React.Component {
   render() {
     return (
+      <span className="GameInfo">
+        {this.props.winner !== undefined &&
+          <p><b>WINNER IS {this.props.winner}</b></p>}
         <p>
           <b>Round</b>:
           Turn: {this.props.turn + 1},
           current double: {this.props.currentDouble},
-          unused doubles: {this.props.unusedDoubles}
-        </p>);
+          unused doubles: {this.props.unusedDoubles},
+          number of bones: {this.props.numBones}
+        </p>
+      </span>);
   }
 }
 
@@ -226,6 +234,7 @@ class Playfield extends React.Component {
   render() {
     let players = this.props.players.map(getPlayerRowFun(this.props.currentPlayer));
     return (
+      <span className="Playfield">
         <p>
           <b>Playfield:</b>
           <table>
@@ -234,11 +243,12 @@ class Playfield extends React.Component {
               <th>Score</th>
               <th>Penny?</th>
               <th>Walking?</th>
-              <th style={{whiteSpace: 'nowrap'}}>Line</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Line</th>
             </tr>
             {players}
           </table>
-        </p>);
+        </p>
+      </span>);
   }
 }
 
@@ -296,6 +306,7 @@ class Hand extends React.Component {
           });
         }
         return (
+          <span className="Hand">
             <p>
               <b>{this.props.currentPlayer}'s hand:</b>
               <table><tr>{hand}</tr></table>
@@ -306,7 +317,8 @@ class Hand extends React.Component {
                   <td><button onClick={this.handleClick}>Walking</button></td>
                 </tr>
               </table>
-            </p>);
+            </p>
+          </span>);
       }
     }
   }

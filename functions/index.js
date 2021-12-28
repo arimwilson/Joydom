@@ -2,6 +2,8 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
+let MAX_DOUBLE = 9;
+
 exports.startGame = functions.https.onCall((data, context) => {
   const players = Array(data.numPlayers);
   for (let playerNumber = 1; playerNumber <= players.length;
@@ -13,7 +15,7 @@ exports.startGame = functions.https.onCall((data, context) => {
   }
   const game = {
     players: players,
-    unusedDoubles: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    unusedDoubles:  [...Array(MAX_DOUBLE + 1).keys()].map(x => MAX_DOUBLE - x),
   };
   return admin.database().ref(`game/${data.gameId}`).set(game);
 });
@@ -75,9 +77,9 @@ function isDoubleFun(currentDouble) {
 }
 
 function startRound(game) {
-  // double 9 set has 55 tiles - (n+1)(n=2)/2
-  const tiles = Array(55);
-  for (let end1 = 0, i = 0; end1 <= 9; ++end1) {
+  // double 9 set has 55 tiles - (n+1)(n+2)/2
+  const tiles = Array((MAX_DOUBLE + 1)*(MAX_DOUBLE + 2) / 2);
+  for (let end1 = 0, i = 0; end1 <= MAX_DOUBLE; ++end1) {
     for (let end2 = 0; end2 <= end1; ++end2) {
       tiles[i++] = new DominoTile(end1, end2);
     }
@@ -218,12 +220,14 @@ exports.takeAction = functions.https.onCall((data, context) => {
         break;
       }
       case actions.DRAW: {
-        if ("hand" in game.players[currentPlayerIndex]) {
-          game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
-        } else {
-          game.players[currentPlayerIndex].hand = [game.boneyard[0]];
+        if (game.boneyard.length > 0) {
+          if ("hand" in game.players[currentPlayerIndex]) {
+            game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
+          } else {
+            game.players[currentPlayerIndex].hand = [game.boneyard[0]];
+          }
+          game.boneyard.splice(0, 1);
         }
-        game.boneyard.splice(0, 1);
         break;
       }
       case actions.PASS: {
