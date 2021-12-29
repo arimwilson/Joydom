@@ -171,23 +171,28 @@ class PlayPage extends React.Component {
   render() {
     return (
         this.state.game !== null &&
-          <span className="PlayPage">
+        <span className={`PlayPage row`}>
+          <span className="column">
             <GameInfo
-                winner={this.state.game.winner}
-                turn={this.state.game.turn}
-                currentDouble={this.state.game.currentDouble}
-                unusedDoubles={this.state.game.unusedDoubles}
-                numBones=
-                  {"boneyard" in this.state.game?
-                    this.state.game.boneyard.length: 0}
-                />
+              winner={this.state.game.winner}
+              turn={this.state.game.turn}
+              currentDouble={this.state.game.currentDouble}
+              unusedDoubles={this.state.game.unusedDoubles}
+              numBones=
+              {"boneyard" in this.state.game ?
+                this.state.game.boneyard.length : 0}
+            />
             <Playfield
-                players={this.state.game.players}
-                currentPlayer={this.state.game.currentPlayer}/>
+              players={this.state.game.players}
+              currentPlayer={this.state.game.currentPlayer} />
             <Hand
-                currentPlayer={this.state.game.currentPlayer}
-                players={this.state.game.players}/>
+              currentPlayer={this.state.game.currentPlayer}
+              players={this.state.game.players} />
           </span>
+          <span className="column">
+            <Actions actions={this.state.game.currentActions} />
+          </span>
+        </span>
     );
   }
 }
@@ -321,6 +326,31 @@ class Hand extends React.Component {
           </span>);
       }
     }
+  }
+}
+
+// TODO(ariw): Actions should be human readable and reflect most recent actions
+// from all players.
+class Actions extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    let actions = "none";
+    if ("actions" in this.props) {
+      actions = this.props.actions.map(function(action) {
+        return (
+          <tr>{action.action} {action.tile} {action.line}</tr>
+        );
+      });
+    }
+    return (
+      <span className="Actions">
+        <b>Actions</b>
+        <table>{actions}</table>
+      </span>
+    );
   }
 }
 

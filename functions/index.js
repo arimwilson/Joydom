@@ -231,14 +231,6 @@ exports.takeAction = functions.https.onCall((data, context) => {
         break;
       }
       case actions.PASS: {
-        // can only pass if you've either played or drawn
-        // TODO(ariw): ensure that you've played at least one tile if you have
-        // one that you can play.
-        if (!("currentActions" in game)) {
-          throw new functions.https.HttpsError(
-              "invalid-argument", "Can't pass without playing or drawing.");
-        }
-        // can only pass if you don't have any tiles to play
         // check for win condition
         if (("walking" in game.players[currentPlayerIndex]) &&
             game.players[currentPlayerIndex].walking === game.turn - 1 &&
@@ -268,6 +260,13 @@ exports.takeAction = functions.https.onCall((data, context) => {
             startRound(game);
           }
           break;
+        }
+        // can only pass if you've either played or drawn
+        // TODO(ariw): ensure that you've played at least one tile if you have
+        // one that you can play.
+        if (!("currentActions" in game)) {
+          throw new functions.https.HttpsError(
+              "invalid-argument", "Can't pass without playing or drawing.");
         }
         // if you did not play on your own and could not have; add a penny.
         // doubles don't count as playing on your own but count if held in
