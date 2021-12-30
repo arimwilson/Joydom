@@ -72,8 +72,33 @@ function getTilesPerPlayer(numPlayers) {
   }
 }
 
-function isDoubleFun(currentDouble) {
+function isDouble(currentDouble) {
   return (tile) => tile.end1 === currentDouble && tile.end2 === currentDouble;
+}
+
+const ACTIONS = {
+  NONE: 0,
+  PLAY: 1,
+  DRAW: 2,
+  PASS: 3,
+  WALKING: 4,
+};
+
+class Action {
+  constructor(player, action, tile, line) {
+    this.player = player;
+    this.action = action;
+    this.tile = tile;
+    this.line = line;
+  }
+
+  record(game) {
+    if ("actions" in game) {
+      game.actions.unshift(this);
+    } else {
+      game.actions = [this];
+    }
+  }
 }
 
 function startRound(game) {
@@ -104,13 +129,14 @@ function startRound(game) {
     for (let i = 0; i < game.unusedDoubles.length; i++) {
       game.currentDouble = game.unusedDoubles[i];
       for (let j = 0; j < game.players.length; j++) {
-        const doubleIndex = game.players[j].hand.findIndex(isDoubleFun(
+        const doubleIndex = game.players[j].hand.findIndex(isDouble(
             game.currentDouble));
         if (doubleIndex !== -1) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
-          game.currentActions = [
-            {action: actions.PLAY, tile: game.currentDouble * 11, line: j+1}];
+          Action(
+            game.currentPlayer, ACTIONS.PLAY, game.CurrentDouble * 11, j + 1)
+            .record();
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -138,14 +164,6 @@ exports.startRound = functions.https.onCall((data, context) => {
   });
 });
 
-const actions = {
-  NONE: 0,
-  PLAY: 1,
-  DRAW: 2,
-  PASS: 3,
-  WALKING: 4,
-};
-
 function couldHavePlayedOnOwn(currentDouble, line, hand) {
   let matchTile = new DominoTile(currentDouble, currentDouble);
   if (typeof line !== "undefined") {
@@ -168,13 +186,9 @@ exports.takeAction = functions.https.onCall((data, context) => {
       }
     }
     delete data.gameId;
-    if ("currentActions" in game) {
-      game.currentActions.unshift(data);
-    } else {
-      game.currentActions = [data];
-    }
+    recordAction(game, data);
     switch (data.action) {
-      case actions.PLAY: {
+      case ACTIONS.PLAY: {
         // note: this makes the game not work for double sets above 9
         const tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
         let inHand = false;
@@ -219,7 +233,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         game.players[currentPlayerIndex].hand.splice();
         break;
       }
-      case actions.DRAW: {
+      case ACTIONS.DRAW: {
         if (game.boneyard.length > 0) {
           if ("hand" in game.players[currentPlayerIndex]) {
             game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
@@ -230,7 +244,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         break;
       }
-      case actions.PASS: {
+      case ACTIONS.PASS: {
         // check for win condition
         if (("walking" in game.players[currentPlayerIndex]) &&
             game.players[currentPlayerIndex].walking === game.turn - 1 &&
@@ -274,11 +288,11 @@ exports.takeAction = functions.https.onCall((data, context) => {
         let playedOrDrew = false, playedOnOwn = false;
         for (let i = 0; i < game.currentActions.length; i++) {
           const action = game.currentActions[i];
-          if (action.action === actions.PLAY ||
-              action.action === actions.DRAW) {
+          if (action.action === ACTIONS.PLAY ||
+              action.action === ACTIONS.DRAW) {
             playedOrDrew = true;
           }
-          if (action.action === actions.PLAY &&
+          if (action.action === ACTIONS.PLAY &&
               action.line - 1 === currentPlayerIndex &&
               Math.floor(action.tile / 10) !== action.tile % 10) {
             playedOnOwn = true;
@@ -303,7 +317,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         delete game.currentActions;
         break;
       }
-      case actions.WALKING: {
+      case ACTIONS.WALKING: {
         game.players[currentPlayerIndex].walking = game.turn;
         break;
       }

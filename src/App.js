@@ -257,7 +257,7 @@ class Playfield extends React.Component {
   }
 }
 
-const actions = {
+const ACTIONS = {
   NONE: 0,
   PLAY: 1,
   DRAW: 2,
@@ -274,15 +274,15 @@ class Hand extends React.Component {
   handleClick = (e) => {
     const text = e.target.textContent;
     var takeAction = functions.httpsCallable('takeAction');
-    var request = {gameId: gameId, action: actions.PLAY};
+    var request = {gameId: gameId, action: ACTIONS.PLAY};
     if (text === "Draw") {
-      request.action = actions.DRAW;
+      request.action = ACTIONS.DRAW;
     } else if (text === "Pass") {
-      request.action = actions.PASS;
+      request.action = ACTIONS.PASS;
     } else if (text === "Pass/end turn") {
-      request.action = actions.PASS;
+      request.action = ACTIONS.PASS;
     } else if (text === "Walking") {
-      request.action = actions.WALKING;
+      request.action = ACTIONS.WALKING;
     } else {
       request.tile = Number(text);
       request.line = prompt(`Which line (1-${this.props.players.length})?`);
