@@ -190,7 +190,7 @@ class PlayPage extends React.Component {
               players={this.state.game.players} />
           </span>
           <span className="column">
-            <Actions actions={this.state.game.currentActions} />
+            <Actions actions={this.state.game.actions} />
           </span>
         </span>
     );
@@ -341,7 +341,7 @@ class Actions extends React.Component {
     if ("actions" in this.props) {
       actions = this.props.actions.map(function(action) {
         return (
-          <tr>{action.action} {action.tile} {action.line}</tr>
+          <tr>{action.player} {action.action} {action.tile} {action.line}</tr>
         );
       });
     }

@@ -88,8 +88,12 @@ class Action {
   constructor(player, action, tile, line) {
     this.player = player;
     this.action = action;
-    this.tile = tile;
-    this.line = line;
+    if (tile !== undefined) {
+      this.tile = tile;
+    }
+    if (line !== undefined) {
+      this.line = line;
+    }
   }
 
   record(game) {
@@ -98,6 +102,15 @@ class Action {
     } else {
       game.actions = [this];
     }
+  }
+
+  // return only actions of the current player
+  static currentActions(game) {
+    let i = 0;
+    for (; i < game.actions.length; i++) {
+      if (game.actions[i].player != game.currentPlayer) break;
+    }
+    return game.actions.slice(0, i);
   }
 }
 
@@ -134,9 +147,9 @@ function startRound(game) {
         if (doubleIndex !== -1) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
-          Action(
-            game.currentPlayer, ACTIONS.PLAY, game.CurrentDouble * 11, j + 1)
-            .record();
+          new Action(
+            game.currentPlayer, ACTIONS.PLAY, game.currentDouble * 11, j + 1).
+            record(game);
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -186,7 +199,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
       }
     }
     delete data.gameId;
-    recordAction(game, data);
+    new Action(game.currentPlayer, data.action, data.tile, data.line).record(
+        game);
     switch (data.action) {
       case ACTIONS.PLAY: {
         // note: this makes the game not work for double sets above 9
@@ -278,7 +292,9 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // can only pass if you've either played or drawn
         // TODO(ariw): ensure that you've played at least one tile if you have
         // one that you can play.
-        if (!("currentActions" in game)) {
+        let currentActions = Action.currentActions(game);
+        console.log(currentActions);
+        if (currentActions.length === 0) {
           throw new functions.https.HttpsError(
               "invalid-argument", "Can't pass without playing or drawing.");
         }
@@ -286,8 +302,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // doubles don't count as playing on your own but count if held in
         // reserve. if you played on your own; remove a penny
         let playedOrDrew = false, playedOnOwn = false;
-        for (let i = 0; i < game.currentActions.length; i++) {
-          const action = game.currentActions[i];
+        for (let i = 0; i < currentActions.length; i++) {
+          const action = currentActions[i];
           if (action.action === ACTIONS.PLAY ||
               action.action === ACTIONS.DRAW) {
             playedOrDrew = true;
@@ -314,7 +330,6 @@ exports.takeAction = functions.https.onCall((data, context) => {
           game.turn++;
         }
         game.currentPlayer = `Player ${nextPlayer}`;
-        delete game.currentActions;
         break;
       }
       case ACTIONS.WALKING: {
