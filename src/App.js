@@ -47,7 +47,7 @@ class App extends React.Component {
     if (this.state.page === "menu") {
       page = <MenuPage changePage={this.changePage} />;
     } else if (this.state.page === "start") {
-      page = <PlayPage />;
+      page = <PlayPage changePage={this.changePage} />;
     } else if (this.state.page === "join") {
       page = <JoinPage changePage={this.changePage} />;
     } else {
@@ -187,7 +187,8 @@ class PlayPage extends React.Component {
               currentPlayer={this.state.game.currentPlayer} />
             <Hand
               currentPlayer={this.state.game.currentPlayer}
-              players={this.state.game.players} />
+              players={this.state.game.players}
+              changePage={this.props.changePage} />
           </span>
           <span className="column">
             <Actions actions={this.state.game.actions} />
@@ -204,11 +205,11 @@ class GameInfo extends React.Component {
         {this.props.winner !== undefined &&
           <p><b>WINNER IS {this.props.winner}</b></p>}
         <p>
-          <b>Round</b>:
-          Turn: {this.props.turn + 1},
+          <b>Game information</b>:
           current double: {this.props.currentDouble},
           unused doubles: {this.props.unusedDoubles},
-          number of bones: {this.props.numBones}
+          turn: {this.props.turn + 1},
+          number of bones remaining: {this.props.numBones}
         </p>
       </span>);
   }
@@ -283,6 +284,9 @@ class Hand extends React.Component {
       request.action = ACTIONS.PASS;
     } else if (text === "Walking") {
       request.action = ACTIONS.WALKING;
+    } else if (text === "Exit game") {
+      this.props.changePage("menu");
+      return;
     } else {
       request.tile = Number(text);
       request.line = prompt(`Which line (1-${this.props.players.length})?`);
@@ -320,6 +324,7 @@ class Hand extends React.Component {
                   <td><button onClick={this.handleClick}>Draw</button></td>
                   <td><button onClick={this.handleClick}>Pass/end turn</button></td>
                   <td><button onClick={this.handleClick}>Walking</button></td>
+                  <td><button onClick={this.handleClick}>Exit game</button></td>
                 </tr>
               </table>
             </p>
@@ -342,7 +347,7 @@ function renderAction(action) {
     case ACTIONS.WALKING:
       return (<tr>{action.player} is walking!</tr>);
     default:
-      return (<tr>ERROR UNKNOWN ACTION {action.action}</tr>);
+      return (<tr>UNKNOWN ACTION {action.action}</tr>);
   }
 }
 
@@ -358,8 +363,10 @@ class Actions extends React.Component {
     }
     return (
       <span className="Actions">
-        <b>Actions</b>
-        <table>{actions}</table>
+        <p>
+          <b>Actions:</b>
+          <table>{actions}</table>
+        </p>
       </span>
     );
   }

@@ -199,6 +199,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
       }
     }
     delete data.gameId;
+    // TODO(ariw): Add extra action information (e.g. penny was added/removed).
     new Action(game.currentPlayer, data.action, data.tile, data.line).record(
         game);
     switch (data.action) {
@@ -293,7 +294,6 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // TODO(ariw): ensure that you've played at least one tile if you have
         // one that you can play.
         let currentActions = Action.currentActions(game);
-        console.log(currentActions);
         if (currentActions.length === 0) {
           throw new functions.https.HttpsError(
               "invalid-argument", "Can't pass without playing or drawing.");

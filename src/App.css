@@ -16,6 +16,7 @@
 .App {
   background-color: rgb(40, 37, 53);
   min-height: 100vh;
+  color: white;
 }
 
 .App header {
@@ -32,14 +33,12 @@
   display: float;
   align-items: left;
   min-height: 5vh;
-  color: white;
 }
 
 .AboutPage {
   display: float;
   align-items: left;
   min-height: 5vh;
-  color: white;
 }
 
 .row {
@@ -60,28 +59,24 @@
   display: flex;
   align-items: left;
   min-height: 5vh;
-  color: white;
 }
 
 .Playfield {
   display: flex;
   justify-content: left;
   min-height: 70vh;
-  color: white;
 }
 
 .Hand {
   display: flex;
   justify-content: left;
   min-height: 20vh;
-  color: white;
 }
 
 .Actions {
   display: flex;
   align-items: left;
   min-height: 5vh;
-  color: white;
 }
 
 table {
