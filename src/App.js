@@ -329,6 +329,23 @@ class Hand extends React.Component {
   }
 }
 
+function renderAction(action) {
+  switch (action.action) {
+    case ACTIONS.PLAY:
+      return (
+        <tr>{action.player} played {action.tile} on the {action.line} line.
+        </tr>);
+    case ACTIONS.DRAW:
+      return (<tr>{action.player} drew a tile.</tr>);
+    case ACTIONS.PASS:
+      return (<tr>{action.player} ended their turn.</tr>);
+    case ACTIONS.WALKING:
+      return (<tr>{action.player} is walking!</tr>);
+    default:
+      return (<tr>ERROR UNKNOWN ACTION {action.action}</tr>);
+  }
+}
+
 // TODO(ariw): Actions should be human readable and reflect most recent actions
 // from all players.
 class Actions extends React.Component {
@@ -339,11 +356,7 @@ class Actions extends React.Component {
   render() {
     let actions = "none";
     if ("actions" in this.props) {
-      actions = this.props.actions.map(function(action) {
-        return (
-          <tr>{action.player} {action.action} {action.tile} {action.line}</tr>
-        );
-      });
+      actions = this.props.actions.map(renderAction);
     }
     return (
       <span className="Actions">
