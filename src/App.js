@@ -25,6 +25,7 @@ if (window.location.hostname === "localhost" ||
   }
 }
 
+var name;
 var gameId;
 var aboutPage = { __html: require('./about.html.js') };
 
@@ -139,6 +140,14 @@ class PlayPage extends React.Component {
 
   componentDidMount() {
     var startGame = functions.httpsCallable('startGame');
+    let defaultNames = [
+      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
+      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
+    let defaultName = defaultNames[getRandomInt(0, defaultNames.length)]
+    name = prompt('name? ', defaultName);
+    if (name === null) {
+      name = defaultName;
+    }
     let defaultGameId = getRandomInt(0, 1000);
     gameId = prompt('Game ID? ', defaultGameId);
     if (gameId === null) {
@@ -150,6 +159,7 @@ class PlayPage extends React.Component {
       numPlayers = defaultNumPlayers;
     }
     startGame({
+      name: name,
       gameId: gameId,
       numPlayers: parseInt(numPlayers),
     }).then((response) => {
@@ -238,7 +248,8 @@ function getPlayerRowFun(currentPlayer) {
 
 class Playfield extends React.Component {
   render() {
-    let players = this.props.players.map(getPlayerRowFun(this.props.currentPlayer));
+    let players = this.props.players.map(getPlayerRowFun(
+        this.props.currentPlayer));
     return (
       <span className="Playfield">
         <p>

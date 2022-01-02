@@ -9,7 +9,7 @@ exports.startGame = functions.https.onCall((data, context) => {
   for (let playerNumber = 1; playerNumber <= players.length;
     ++playerNumber) {
     players[playerNumber - 1] = {
-      name: "Player " + playerNumber,
+      name: (playerNumber === 1? data.name: "Player " + playerNumber),
       score: 0,
     };
   }
@@ -325,11 +325,11 @@ exports.takeAction = functions.https.onCall((data, context) => {
             game.players[currentPlayerIndex].hand)) {
           game.players[currentPlayerIndex].penny = true;
         }
-        const nextPlayer = (currentPlayerIndex + 1) % game.players.length + 1;
-        if (nextPlayer === 1) {
+        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+        if (nextPlayerIndex === 1) {
           game.turn++;
         }
-        game.currentPlayer = `Player ${nextPlayer}`;
+        game.currentPlayer = game.players[nextPlayerIndex].name;
         break;
       }
       case ACTIONS.WALKING: {
