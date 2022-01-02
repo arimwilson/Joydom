@@ -346,8 +346,6 @@ function renderAction(action) {
   }
 }
 
-// TODO(ariw): Actions should be human readable and reflect most recent actions
-// from all players.
 class Actions extends React.Component {
   constructor(props) {
     super(props);
