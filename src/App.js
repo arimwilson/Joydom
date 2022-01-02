@@ -163,6 +163,8 @@ class PlayPage extends React.Component {
       gameId: gameId,
       numPlayers: parseInt(numPlayers),
     }).then((response) => {
+      // TODO(ariw): Separate out the logic here so we can display an
+      // intermediate "joinable" state for the game.
 			var startRound = functions.httpsCallable('startRound');
 			startRound({ gameId: gameId }).then((response) => {
 				database.ref(`game/${gameId}`).on('value', (snapshot) => {
