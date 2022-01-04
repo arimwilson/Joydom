@@ -48,12 +48,15 @@ class App extends React.Component {
     if (this.state.page === "menu") {
       page = <MenuPage changePage={this.changePage} />;
     } else if (this.state.page === "start") {
-      page = <PlayPage changePage={this.changePage} />;
+      page = <StartPage changePage={this.changePage} />;
     } else if (this.state.page === "join") {
       page = <JoinPage changePage={this.changePage} />;
+    } else if (this.state.page === "play") {
+      page = <PlayPage changePage={this.changePage} />;
     } else {
       page = <AboutPage changePage={this.changePage} />;
     }
+
     return (
       <div className="App">
         <header>
@@ -90,6 +93,63 @@ class MenuPage extends React.Component {
         <button onClick={this.join}>Join game</button><br />
         <button onClick={this.about}>How to play / about</button>
       </span>
+    );
+  }
+}
+
+class StartPage extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { game: null, }
+  }
+
+  menu = () => {
+    this.props.changePage("menu");
+  }
+
+  componentDidMount() {
+    let defaultNames = [
+      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
+      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
+    let defaultName = defaultNames[getRandomInt(0, defaultNames.length)]
+    name = prompt('name? ', defaultName);
+    if (name === null) {
+      name = defaultName;
+    }
+    let defaultGameId = getRandomInt(0, 1000);
+    gameId = prompt('Game ID? ', defaultGameId);
+    if (gameId === null) {
+      gameId = defaultGameId;
+    }
+    let defaultNumPlayers = "4";
+    let numPlayers = prompt('Number of players? ', defaultNumPlayers);
+    if (numPlayers === null) {
+      numPlayers = defaultNumPlayers;
+    }
+    var startGame = functions.httpsCallable('startGame');
+    startGame({
+      name: name,
+      gameId: gameId,
+      numPlayers: parseInt(numPlayers),
+    }).then((response) => {
+      database.ref(`game/${gameId}`).on('value', (snapshot) => {
+        this.setState({ game: snapshot.val(), });
+      }, (errorObject) => {
+        console.log(errorObject);
+      });
+    }).catch((error) => {
+      alert(`Code: ${error.code}. Message: ${error.message}`);
+    });
+  }
+
+
+  render() {
+    return (
+        this.state.game !== null &&
+        <span className="StartPage">
+          Waiting for {this.state.game.players.length - 1} players to join.
+          <br /><button onClick={this.menu}>Back</button>
+        </span>
     );
   }
 }
@@ -139,42 +199,13 @@ class PlayPage extends React.Component {
   }
 
   componentDidMount() {
-    var startGame = functions.httpsCallable('startGame');
-    let defaultNames = [
-      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
-      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
-    let defaultName = defaultNames[getRandomInt(0, defaultNames.length)]
-    name = prompt('name? ', defaultName);
-    if (name === null) {
-      name = defaultName;
-    }
-    let defaultGameId = getRandomInt(0, 1000);
-    gameId = prompt('Game ID? ', defaultGameId);
-    if (gameId === null) {
-      gameId = defaultGameId;
-    }
-    let defaultNumPlayers = "4";
-    let numPlayers = prompt('Number of players? ', defaultNumPlayers);
-    if (numPlayers === null) {
-      numPlayers = defaultNumPlayers;
-    }
-    startGame({
-      name: name,
-      gameId: gameId,
-      numPlayers: parseInt(numPlayers),
-    }).then((response) => {
-      // TODO(ariw): Separate out the logic here so we can display an
-      // intermediate "joinable" state for the game.
-			var startRound = functions.httpsCallable('startRound');
-			startRound({ gameId: gameId }).then((response) => {
-				database.ref(`game/${gameId}`).on('value', (snapshot) => {
-					this.setState({game: snapshot.val(), });
-				}, (errorObject) => {
-					console.log(errorObject);
-				});
-			}).catch((error) => {
-				alert(`Code: ${error.code}. Message: ${error.message}`);
-			});
+    var startRound = functions.httpsCallable('startRound');
+    startRound({ gameId: gameId }).then((response) => {
+      database.ref(`game/${gameId}`).on('value', (snapshot) => {
+        this.setState({game: snapshot.val(), });
+      }, (errorObject) => {
+        console.log(errorObject);
+      });
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
     });
@@ -182,31 +213,51 @@ class PlayPage extends React.Component {
 
   render() {
     return (
-        this.state.game !== null &&
-        <span className={`PlayPage row`}>
-          <span className="column">
-            <GameInfo
-              winner={this.state.game.winner}
-              turn={this.state.game.turn}
-              currentDouble={this.state.game.currentDouble}
-              unusedDoubles={this.state.game.unusedDoubles}
-              numBones=
-              {"boneyard" in this.state.game ?
-                this.state.game.boneyard.length : 0}
-            />
-            <Playfield
-              players={this.state.game.players}
-              currentPlayer={this.state.game.currentPlayer} />
-            <Hand
-              currentPlayer={this.state.game.currentPlayer}
-              players={this.state.game.players}
-              changePage={this.props.changePage} />
-          </span>
-          <span className="column">
-            <Actions actions={this.state.game.actions} />
-          </span>
+      <span className={`PlayPage row`}>
+        <span className="column">
+          <GameInfo
+            state={this.state.game.state}
+            winner={this.state.game.winner}
+            turn={this.state.game.turn}
+            currentDouble={this.state.game.currentDouble}
+            unusedDoubles={this.state.game.unusedDoubles}
+            numBones=
+            {"boneyard" in this.state.game ?
+              this.state.game.boneyard.length : 0}
+          />
+          <Playfield
+            players={this.state.game.players}
+            currentPlayer={this.state.game.currentPlayer} />
+          <Hand
+            currentPlayer={this.state.game.currentPlayer}
+            players={this.state.game.players}
+            changePage={this.props.changePage} />
         </span>
-    );
+        <span className="column">
+          <Actions actions={this.state.game.actions} />
+        </span>
+      </span>
+    )
+  }
+}
+
+const GAME_STATE = {
+  ERROR: 0,
+  JOINABLE: 1,
+  STARTED: 2,
+  ENDED: 3,
+};
+
+function renderState(state) {
+  switch (state) {
+    case GAME_STATE.JOINABLE:
+      return "joinable";
+    case GAME_STATE.STARTED:
+      return "started";
+    case GAME_STATE.ENDED:
+      return "ended";
+    default:
+      return "error";
   }
 }
 
@@ -214,14 +265,17 @@ class GameInfo extends React.Component {
   render() {
     return (
       <span className="GameInfo">
-        {this.props.winner !== undefined &&
-          <p><b>WINNER IS {this.props.winner}</b></p>}
         <p>
           <b>Game information</b>:
-          current double: {this.props.currentDouble},
-          unused doubles: {this.props.unusedDoubles},
-          turn: {this.props.turn + 1},
-          number of bones remaining: {this.props.numBones}
+          <ul>
+            {this.props.winner !== undefined &&
+            <li><b>WINNER IS {this.props.winner}</b></li>}
+            <li>State: {renderState(this.props.state)} </li>
+            <li>Current double: {this.props.currentDouble}</li>
+            <li>Unused doubles: {this.props.unusedDoubles}</li>
+            <li>Turn: {this.props.turn + 1}</li>
+            <li>Number of bones remaining: {this.props.numBones}</li>
+          </ul>
         </p>
       </span>);
   }
@@ -344,6 +398,7 @@ class Hand extends React.Component {
           </span>);
       }
     }
+    return null;
   }
 }
 
@@ -371,7 +426,7 @@ class Actions extends React.Component {
 
   render() {
     let actions = "none";
-    if ("actions" in this.props) {
+    if (typeof this.props.actions !== 'undefined') {
       actions = this.props.actions.map(renderAction);
     }
     return (

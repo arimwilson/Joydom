@@ -4,6 +4,13 @@ admin.initializeApp();
 
 let MAX_DOUBLE = 9;
 
+const GAME_STATE = {
+  ERROR: 0,
+  JOINABLE: 1,
+  STARTED: 2,
+  ENDED: 3,
+};
+
 exports.startGame = functions.https.onCall((data, context) => {
   const players = Array(data.numPlayers);
   for (let playerNumber = 1; playerNumber <= players.length;
@@ -14,8 +21,9 @@ exports.startGame = functions.https.onCall((data, context) => {
     };
   }
   const game = {
+    state: GAME_STATE.JOINABLE,
     players: players,
-    unusedDoubles:  [...Array(MAX_DOUBLE + 1).keys()].map(x => MAX_DOUBLE - x),
+    unusedDoubles:  [...Array(MAX_DOUBLE + 1).keys()].map(x => MAX_DOUBLE - x)
   };
   return admin.database().ref(`game/${data.gameId}`).set(game);
 });
