@@ -134,39 +134,102 @@ class StartPage extends React.Component {
     }).then((response) => {
       database.ref(`game/${gameId}`).on('value', (snapshot) => {
         this.setState({ game: snapshot.val(), });
+        let playersToJoin =
+          this.state.game.numPlayers - this.state.game.players.length;
+        if (playersToJoin === 0) {
+          this.props.changePage("play");
+        }
       }, (errorObject) => {
         console.log(errorObject);
       });
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
+      this.menu();
     });
   }
 
-
   render() {
-    return (
-        this.state.game !== null &&
-        <span className="StartPage">
-          Waiting for {this.state.game.players.length - 1} players to join.
-          <br /><button onClick={this.menu}>Back</button>
-        </span>
+    if (this.state.game === null) {
+      return null;
+    }
+    let playersToJoin =
+      this.state.game.numPlayers - this.state.game.players.length;
+    let players = this.state.game.players.map(function(player) {
+      return (<li>{player.name}</li>);
+    });
+    return  (
+      <span className="StartPage">
+        Waiting for {playersToJoin} player(s) to join. Current players:
+        <ul>
+        {players}
+        </ul>
+        <br /><button onClick={this.menu}>Back</button>
+      </span>
     );
   }
 }
 
+// TODO(ariw): Remove duplication between this and StartPage.
 class JoinPage extends React.Component {
   constructor(props) {
     super(props);
+    this.state = { game: null, }
   }
 
   menu = () => {
     this.props.changePage("menu");
   }
 
+  componentDidMount() {
+    let defaultNames = [
+      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
+      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
+    let defaultName = defaultNames[getRandomInt(0, defaultNames.length)]
+    name = prompt('name? ', defaultName);
+    if (name === null) {
+      name = defaultName;
+    }
+    let defaultGameId = getRandomInt(0, 1000);
+    gameId = prompt('Game ID? ', defaultGameId);
+    if (gameId === null) {
+      gameId = defaultGameId;
+    }
+    var joinGame = functions.httpsCallable('joinGame');
+    joinGame({
+      name: name,
+      gameId: gameId,
+    }).then((response) => {
+      database.ref(`game/${gameId}`).on('value', (snapshot) => {
+        this.setState({ game: snapshot.val(), });
+        let playersToJoin =
+          this.state.game.numPlayers - this.state.game.players.length;
+        if (playersToJoin === 0) {
+          this.props.changePage("play");
+        }
+      }, (errorObject) => {
+        console.log(errorObject);
+      });
+    }).catch((error) => {
+      alert(`Code: ${error.code}. Message: ${error.message}`);
+      this.menu();
+    });
+  }
+
   render() {
-    return (
+    if (this.state.game === null) {
+      return null;
+    }
+    let playersToJoin =
+      this.state.game.numPlayers - this.state.game.players.length;
+    let players = this.state.game.players.map(function(player) {
+      return (<li>{player.name}</li>);
+    });
+    return  (
       <span className="JoinPage">
-        Hello world!
+        Waiting for {playersToJoin} players to join. Current players:
+        <ul>
+        {players}
+        </ul>
         <br /><button onClick={this.menu}>Back</button>
       </span>
     );
@@ -200,6 +263,8 @@ class PlayPage extends React.Component {
 
   componentDidMount() {
     var startRound = functions.httpsCallable('startRound');
+    // TODO(ariw): Only one player should start the round! Figure out how to
+    // prevent this from getting called multiple times.
     startRound({ gameId: gameId }).then((response) => {
       database.ref(`game/${gameId}`).on('value', (snapshot) => {
         this.setState({game: snapshot.val(), });
@@ -213,6 +278,7 @@ class PlayPage extends React.Component {
 
   render() {
     return (
+      this.state.game !== null &&
       <span className={`PlayPage row`}>
         <span className="column">
           <GameInfo
@@ -241,26 +307,6 @@ class PlayPage extends React.Component {
   }
 }
 
-const GAME_STATE = {
-  ERROR: 0,
-  JOINABLE: 1,
-  STARTED: 2,
-  ENDED: 3,
-};
-
-function renderState(state) {
-  switch (state) {
-    case GAME_STATE.JOINABLE:
-      return "joinable";
-    case GAME_STATE.STARTED:
-      return "started";
-    case GAME_STATE.ENDED:
-      return "ended";
-    default:
-      return "error";
-  }
-}
-
 class GameInfo extends React.Component {
   render() {
     return (
@@ -270,7 +316,6 @@ class GameInfo extends React.Component {
           <ul>
             {this.props.winner !== undefined &&
             <li><b>WINNER IS {this.props.winner}</b></li>}
-            <li>State: {renderState(this.props.state)} </li>
             <li>Current double: {this.props.currentDouble}</li>
             <li>Unused doubles: {this.props.unusedDoubles}</li>
             <li>Turn: {this.props.turn + 1}</li>

@@ -4,28 +4,30 @@ admin.initializeApp();
 
 let MAX_DOUBLE = 9;
 
-const GAME_STATE = {
-  ERROR: 0,
-  JOINABLE: 1,
-  STARTED: 2,
-  ENDED: 3,
-};
-
 exports.startGame = functions.https.onCall((data, context) => {
-  const players = Array(data.numPlayers);
-  for (let playerNumber = 1; playerNumber <= players.length;
-    ++playerNumber) {
-    players[playerNumber - 1] = {
-      name: (playerNumber === 1? data.name: "Player " + playerNumber),
-      score: 0,
-    };
-  }
+  const players = Array(1);
+  players[0] = { name: data.name, score: 0, };
   const game = {
-    state: GAME_STATE.JOINABLE,
+    numPlayers: data.numPlayers,
     players: players,
     unusedDoubles:  [...Array(MAX_DOUBLE + 1).keys()].map(x => MAX_DOUBLE - x)
   };
   return admin.database().ref(`game/${data.gameId}`).set(game);
+});
+
+exports.joinGame = functions.https.onCall((data, context) => {
+  return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+    const game = snapshot.val();
+    if (game.players.length >= game.numPlayers) {
+      throw new functions.https.HttpsError(
+        "invalid-argument", "Can't join a full game.");
+    }
+    game.players.push({ name: data.name, score: 0, });
+    return admin.database().ref(`game/${data.gameId}`).set(game);
+  })
+  .catch((error) => {
+      throw error;
+  });
 });
 
 class DominoTile {
