@@ -148,6 +148,7 @@ class StartPage extends React.Component {
         }
       }, (errorObject) => {
         console.log(errorObject);
+        this.menu();
       });
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
@@ -216,6 +217,7 @@ class JoinPage extends React.Component {
         }
       }, (errorObject) => {
         console.log(errorObject);
+        this.menu();
       });
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);

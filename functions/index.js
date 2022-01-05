@@ -4,6 +4,7 @@ admin.initializeApp();
 
 let MAX_DOUBLE = 9;
 
+// TODO(ariw): Don't let players overwrite each others' games.
 exports.startGame = functions.https.onCall((data, context) => {
   const players = Array(1);
   players[0] = { name: data.name, score: 0, };
@@ -18,6 +19,10 @@ exports.startGame = functions.https.onCall((data, context) => {
 exports.joinGame = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     const game = snapshot.val();
+    if (game === null) {
+      throw new functions.https.HttpsError(
+        "invalid-argument", "Game ID doesn't exist.");
+    }
     if (game.players.length >= game.numPlayers) {
       throw new functions.https.HttpsError(
         "invalid-argument", "Can't join a full game.");
