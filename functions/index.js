@@ -26,7 +26,7 @@ exports.joinGame = functions.https.onCall((data, context) => {
     return admin.database().ref(`game/${data.gameId}`).set(game);
   })
   .catch((error) => {
-      throw error;
+    throw error;
   });
 });
 

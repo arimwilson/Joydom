@@ -100,7 +100,8 @@ class MenuPage extends React.Component {
 class StartPage extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { game: null, }
+    this.state = { game: null, };
+    this.started = false;
   }
 
   menu = () => {
@@ -136,7 +137,13 @@ class StartPage extends React.Component {
         this.setState({ game: snapshot.val(), });
         let playersToJoin =
           this.state.game.numPlayers - this.state.game.players.length;
-        if (playersToJoin === 0) {
+        if (playersToJoin === 0 && !this.started) {
+          var startRound = functions.httpsCallable('startRound');
+          startRound({ gameId: gameId }).then((response) => {}).catch(
+            (error) => {
+              alert(`Code: ${error.code}. Message: ${error.message}`);
+          });
+          this.started = true;
           this.props.changePage("play");
         }
       }, (errorObject) => {
@@ -159,7 +166,8 @@ class StartPage extends React.Component {
     });
     return  (
       <span className="StartPage">
-        Waiting for {playersToJoin} player(s) to join. Current players:
+        Waiting for {playersToJoin} player(s) to join game ID {gameId}. Current
+        players:
         <ul>
         {players}
         </ul>
@@ -226,7 +234,8 @@ class JoinPage extends React.Component {
     });
     return  (
       <span className="JoinPage">
-        Waiting for {playersToJoin} players to join. Current players:
+        Waiting for {playersToJoin} player(s) to join game ID {gameId}. Current
+        players:
         <ul>
         {players}
         </ul>
@@ -262,17 +271,10 @@ class PlayPage extends React.Component {
   }
 
   componentDidMount() {
-    var startRound = functions.httpsCallable('startRound');
-    // TODO(ariw): Only one player should start the round! Figure out how to
-    // prevent this from getting called multiple times.
-    startRound({ gameId: gameId }).then((response) => {
-      database.ref(`game/${gameId}`).on('value', (snapshot) => {
-        this.setState({game: snapshot.val(), });
-      }, (errorObject) => {
-        console.log(errorObject);
-      });
-    }).catch((error) => {
-      alert(`Code: ${error.code}. Message: ${error.message}`);
+    database.ref(`game/${gameId}`).on('value', (snapshot) => {
+      this.setState({game: snapshot.val(), });
+    }, (errorObject) => {
+      console.log(errorObject);
     });
   }
 
@@ -413,37 +415,50 @@ class Hand extends React.Component {
   }
 
   render() {
-    for (let i = 0; i < this.props.players.length; i++) {
+    let handleClick = this.handleClick;
+    if (this.props.currentPlayer !== name) {
+      return (
+        <span className="Hand">
+          <p>
+            <b>{this.props.currentPlayer}'s turn.</b>
+            <br /><button onClick={handleClick}>Exit game</button>
+          </p>
+        </span>
+      );
+    }
+    let i = 0;
+    for (; i < this.props.players.length; i++) {
       if (this.props.players[i].name === this.props.currentPlayer) {
-        let handleClick = this.handleClick;
-        let hand = "empty";
-        if ("hand" in this.props.players[i]) {
-          hand = this.props.players[i].hand.map(function(tile) {
-            return (
-                <td>
-                  <button onClick={handleClick}>{tile.end1}{tile.end2}
-                  </button>
-                </td>);
-          });
-        }
-        return (
-          <span className="Hand">
-            <p>
-              <b>{this.props.currentPlayer}'s hand:</b>
-              <table><tr>{hand}</tr></table>
-              <table>
-                <tr>
-                  <td><button onClick={this.handleClick}>Draw</button></td>
-                  <td><button onClick={this.handleClick}>Pass/end turn</button></td>
-                  <td><button onClick={this.handleClick}>Walking</button></td>
-                  <td><button onClick={this.handleClick}>Exit game</button></td>
-                </tr>
-              </table>
-            </p>
-          </span>);
+        break;
       }
     }
-    return null;
+    
+    let hand = "empty";
+    if ("hand" in this.props.players[i]) {
+      hand = this.props.players[i].hand.map(function(tile) {
+        return (
+            <td>
+              <button onClick={handleClick}>{tile.end1}{tile.end2}
+              </button>
+            </td>);
+      });
+    }
+    return (
+      <span className="Hand">
+        <p>
+          <b>{this.props.currentPlayer}'s hand:</b>
+          <table><tr>{hand}</tr></table>
+          <table>
+            <tr>
+              <td><button onClick={handleClick}>Draw</button></td>
+              <td><button onClick={handleClick}>Pass/end turn</button></td>
+              <td><button onClick={handleClick}>Walking</button></td>
+            </tr>
+          </table>
+          <br /><button onClick={handleClick}>Exit game</button>
+        </p>
+      </span>
+    );
   }
 }
 
