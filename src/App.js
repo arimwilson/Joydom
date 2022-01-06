@@ -69,10 +69,6 @@ class App extends React.Component {
 }
 
 class MenuPage extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   start = () => {
     this.props.changePage("start");
   }
@@ -248,10 +244,6 @@ class JoinPage extends React.Component {
 }
 
 class AboutPage extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   menu = () => {
     this.props.changePage("menu");
   }
@@ -320,7 +312,7 @@ class GameInfo extends React.Component {
           <ul>
             {this.props.winner !== undefined &&
             <li><b>WINNER IS {this.props.winner}</b></li>}
-            <li>Current double: {this.props.currentDouble}</li>
+            <li>Round double: {this.props.currentDouble}</li>
             <li>Unused doubles: {this.props.unusedDoubles}</li>
             <li>Turn: {this.props.turn + 1}</li>
             <li>Number of bones remaining: {this.props.numBones}</li>
@@ -338,7 +330,7 @@ function getPlayerRowFun(currentPlayer) {
       } else {
         return;
       }
-    }): <div>empty</div>);
+    }): <span>empty</span>);
     const isCurrentPlayer = player.name === currentPlayer;
     return (
       <tr>
@@ -383,11 +375,6 @@ const ACTIONS = {
 }
 
 class Hand extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { tilesPlayed: [],  walking: false };
-  }
-
   handleClick = (e) => {
     const text = e.target.textContent;
     var takeAction = functions.httpsCallable('takeAction');
@@ -484,6 +471,14 @@ function renderAction(action) {
 class Actions extends React.Component {
   constructor(props) {
     super(props);
+    this.undo = this.undo.bind(this);
+  }
+
+  undo() {
+    (functions.httpsCallable('undo')({gameId: gameId})).then((response) => {
+    }).catch((error) => {
+      alert(`Code: ${error.code}. Message: ${error.message}`);
+    });
   }
 
   render() {
@@ -494,8 +489,11 @@ class Actions extends React.Component {
     return (
       <span className="Actions">
         <p>
-          <b>Actions:</b>
-          <table>{actions}</table>
+          <b>Round actions:</b>
+          <table>
+            <button onClick={this.undo}>Undo</button>
+            {actions}
+          </table>
         </p>
       </span>
     );

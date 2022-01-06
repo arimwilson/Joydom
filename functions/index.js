@@ -100,7 +100,7 @@ const ACTIONS = {
 };
 
 class Action {
-  constructor(player, action, tile, line) {
+  constructor(player, action, tile, line, priorGame) {
     this.player = player;
     this.action = action;
     if (tile !== undefined) {
@@ -109,13 +109,8 @@ class Action {
     if (line !== undefined) {
       this.line = line;
     }
-  }
-
-  record(game) {
-    if ("actions" in game) {
-      game.actions.unshift(this);
-    } else {
-      game.actions = [this];
+    if (priorGame !== undefined) {
+      this.priorGame = JSON.stringify(priorGame);
     }
   }
 
@@ -162,9 +157,8 @@ function startRound(game) {
         if (doubleIndex !== -1) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
-          new Action(
-            game.currentPlayer, ACTIONS.PLAY, game.currentDouble * 11, j + 1).
-            record(game);
+          game.actions = [new Action(
+            game.currentPlayer, ACTIONS.PLAY, game.currentDouble * 11, j + 1)];
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -215,8 +209,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
     }
     delete data.gameId;
     // TODO(ariw): Add extra action information (e.g. penny was added/removed).
-    new Action(game.currentPlayer, data.action, data.tile, data.line).record(
-        game);
+    game.actions.unshift(
+      new Action(game.currentPlayer, data.action, data.tile, data.line, game));
     switch (data.action) {
       case ACTIONS.PLAY: {
         // note: this makes the game not work for double sets above 9
@@ -352,7 +346,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         break;
       }
       default: {
-        return new functions.https.HttpsError(
+        throw new functions.https.HttpsError(
             "invalid-argument", "Invalid action specified.");
       }
     }
@@ -363,3 +357,18 @@ exports.takeAction = functions.https.onCall((data, context) => {
   });
 });
 
+exports.undo = functions.https.onCall((data, context) => {
+  return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+    let game = snapshot.val();
+    if (typeof game.actions === 'undefined' || game.actions.length <= 1) {
+      // can't undo nothing or initial double
+      throw new functions.https.HttpsError(
+          "invalid-argument", "Unable to undo initial actions.");
+    }
+    return admin.database().ref(`game/${data.gameId}`).set(
+        JSON.parse(game.actions[0].priorGame));
+  })
+  .catch((error) => {
+    throw error;
+  });
+});
