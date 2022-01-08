@@ -27,7 +27,7 @@
       "port": 5001
     },
     "database": {
-      "host": "192.168.0.111",
+      "host": "localhost",
       "port": 9000
     },
     "ui": {
