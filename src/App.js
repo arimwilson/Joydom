@@ -329,15 +329,15 @@ function getTileImage(tile) {
     pipsLeft = tile.end2;
     pipsRight = tile.end1;
   }
-  let style = {};
+  let style = {width: '60px', height: 'auto'};
   if (rotated && tile.end1 === tile.end2) {
-    style = {transform: 'rotate(270deg)'};
+    style['transform'] = 'rotate(270deg)';
   } else if (rotated) {
-    style = {transform: 'rotate(180deg)'};
+    style['transform'] = 'rotate(180deg)';
   } else if (tile.end1 === tile.end2) {
-    style = {transform: 'rotate(90deg)'};
+    style['transform'] = 'rotate(90deg)';
   }
-  return <img src={require(`./images/${pipsLeft}${pipsRight}.svg`)}
+  return <img src={`images/${pipsLeft}${pipsRight}.svg`}
               style={style}></img>
 }
 
