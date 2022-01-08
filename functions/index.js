@@ -99,7 +99,7 @@ const ACTIONS = {
 };
 
 class Action {
-  constructor(player, action, tile, line, priorGame) {
+  constructor(player, action, tile, line, game) {
     this.player = player;
     this.action = action;
     if (typeof tile !== "undefined") {
@@ -108,7 +108,11 @@ class Action {
     if (typeof line !== "undefined") {
       this.line = line;
     }
-    if (typeof priorGame !== "undefined") {
+    if (typeof game !== "undefined") {
+      let priorGame = JSON.parse(JSON.stringify(game));
+      for (let i = 0; i < priorGame.actions.length; i++) {
+        delete priorGame.actions[i].priorGame;
+      }
       this.priorGame = JSON.stringify(priorGame);
     }
   }
@@ -368,8 +372,13 @@ exports.undo = functions.https.onCall((data, context) => {
       throw new functions.https.HttpsError(
           "invalid-argument", "Unable to undo initial actions.");
     }
-    return admin.database().ref(`game/${data.gameId}`).set(
-        JSON.parse(game.actions[0].priorGame));
+    let priorGame = JSON.parse(game.actions[0].priorGame);
+    for (let i = 1; i < game.actions.length; i++) {
+      if (typeof(game.actions[i].priorGame) !== "undefined") {
+        priorGame.actions[i - 1].priorGame = game.actions[i].priorGame;
+      }
+    }
+    return admin.database().ref(`game/${data.gameId}`).set(priorGame);
   }).catch((error) => {
     throw error;
   });
