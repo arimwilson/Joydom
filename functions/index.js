@@ -109,7 +109,7 @@ class Action {
       this.line = line;
     }
     if (typeof game !== "undefined") {
-      let priorGame = JSON.parse(JSON.stringify(game));
+      const priorGame = JSON.parse(JSON.stringify(game));
       for (let i = 0; i < priorGame.actions.length; i++) {
         delete priorGame.actions[i].priorGame;
       }
@@ -372,7 +372,7 @@ exports.undo = functions.https.onCall((data, context) => {
       throw new functions.https.HttpsError(
           "invalid-argument", "Unable to undo initial actions.");
     }
-    let priorGame = JSON.parse(game.actions[0].priorGame);
+    const priorGame = JSON.parse(game.actions[0].priorGame);
     for (let i = 1; i < game.actions.length; i++) {
       if (typeof(game.actions[i].priorGame) !== "undefined") {
         priorGame.actions[i - 1].priorGame = game.actions[i].priorGame;
