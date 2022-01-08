@@ -310,7 +310,7 @@ class GameInfo extends React.Component {
         <p>
           <b>Game information</b>:
           <ul>
-            {this.props.winner !== undefined &&
+            {typeof this.props.winner !== 'undefined' &&
             <li><b>WINNER IS {this.props.winner}</b></li>}
             <li>Round double: {this.props.currentDouble}</li>
             <li>Unused doubles: {this.props.unusedDoubles}</li>
@@ -322,7 +322,7 @@ class GameInfo extends React.Component {
   }
 }
 
-function getTileImage(tile, vertical) {
+function getTileImage(tile, vertical, extraAttributes) {
   let rotated = false, pipsLeft = tile.end1, pipsRight = tile.end2;
   if (tile.end2 > tile.end1) {
     rotated = true;
@@ -338,7 +338,8 @@ function getTileImage(tile, vertical) {
     style['transform'] = 'rotate(90deg)';
   }
   return <img src={`images/${pipsLeft}${pipsRight}.svg`}
-              style={style}></img>
+              style={style}
+              {...extraAttributes}></img>
 }
 
 function getPlayerRowFun(currentPlayer) {
@@ -446,9 +447,9 @@ class Hand extends React.Component {
       hand = this.props.players[i].hand.map(function(tile) {
         return (
             <td>
-              <button onClick={handleClick} id={`${tile.end1}${tile.end2}`}>
-                {getTileImage(tile, false)}
-              </button>
+              {getTileImage(
+                tile, false,
+                {onClick: handleClick, id: `${tile.end1}${tile.end2}`})}
             </td>);
       });
     }
@@ -476,8 +477,7 @@ function renderAction(action) {
     case ACTIONS.PLAY:
       return (
         <tr>
-          {action.player} played {getTileImage(action.tile, false)} on the
-          {action.line} line.
+          {action.player} played {getTileImage(action.tile, false)} on the {action.line} line.
         </tr>);
     case ACTIONS.DRAW:
       return (<tr>{action.player} drew a tile.</tr>);

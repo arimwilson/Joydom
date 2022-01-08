@@ -103,13 +103,13 @@ class Action {
   constructor(player, action, tile, line, priorGame) {
     this.player = player;
     this.action = action;
-    if (tile !== undefined) {
+    if (typeof tile !== 'undefined') {
       this.tile = tile;
     }
-    if (line !== undefined) {
+    if (typeof line !== 'undefined') {
       this.line = line;
     }
-    if (priorGame !== undefined) {
+    if (typeof priorGame !== 'undefined') {
       this.priorGame = JSON.stringify(priorGame);
     }
   }
@@ -210,7 +210,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
     }
     delete data.gameId;
     let tile = undefined;
-    if (data.tile !== undefined)
+    if (typeof data.tile !== 'undefined')
       tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
     // TODO(ariw): Add extra action information (e.g. penny was added/removed).
     game.actions.unshift(
