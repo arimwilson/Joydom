@@ -2,16 +2,16 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
-let MAX_DOUBLE = 9;
+const MAX_DOUBLE = 9;
 
 // TODO(ariw): Don't let players overwrite each others' games.
 exports.startGame = functions.https.onCall((data, context) => {
   const players = Array(1);
-  players[0] = { name: data.name, score: 0, };
+  players[0] = {name: data.name, score: 0};
   const game = {
     numPlayers: data.numPlayers,
     players: players,
-    unusedDoubles:  [...Array(MAX_DOUBLE + 1).keys()].map(x => MAX_DOUBLE - x)
+    unusedDoubles: [...Array(MAX_DOUBLE + 1).keys()].map((x) => MAX_DOUBLE - x),
   };
   return admin.database().ref(`game/${data.gameId}`).set(game);
 });
@@ -21,16 +21,15 @@ exports.joinGame = functions.https.onCall((data, context) => {
     const game = snapshot.val();
     if (game === null) {
       throw new functions.https.HttpsError(
-        "invalid-argument", "Game ID doesn't exist.");
+          "invalid-argument", "Game ID doesn't exist.");
     }
     if (game.players.length >= game.numPlayers) {
       throw new functions.https.HttpsError(
-        "invalid-argument", "Can't join a full game.");
+          "invalid-argument", "Can't join a full game.");
     }
-    game.players.push({ name: data.name, score: 0, });
+    game.players.push({name: data.name, score: 0});
     return admin.database().ref(`game/${data.gameId}`).set(game);
-  })
-  .catch((error) => {
+  }).catch((error) => {
     throw error;
   });
 });
@@ -103,13 +102,13 @@ class Action {
   constructor(player, action, tile, line, priorGame) {
     this.player = player;
     this.action = action;
-    if (typeof tile !== 'undefined') {
+    if (typeof tile !== "undefined") {
       this.tile = tile;
     }
-    if (typeof line !== 'undefined') {
+    if (typeof line !== "undefined") {
       this.line = line;
     }
-    if (typeof priorGame !== 'undefined') {
+    if (typeof priorGame !== "undefined") {
       this.priorGame = JSON.stringify(priorGame);
     }
   }
@@ -158,8 +157,8 @@ function startRound(game) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
           game.actions = [new Action(
-            game.currentPlayer, ACTIONS.PLAY,
-            new DominoTile(game.currentDouble, game.currentDouble), j + 1)];
+              game.currentPlayer, ACTIONS.PLAY,
+              new DominoTile(game.currentDouble, game.currentDouble), j + 1)];
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -181,9 +180,8 @@ exports.startRound = functions.https.onCall((data, context) => {
     const game = snapshot.val();
     startRound(game);
     return admin.database().ref(`game/${data.gameId}`).set(game);
-  })
-  .catch((error) => {
-      throw error;
+  }).catch((error) => {
+    throw error;
   });
 });
 
@@ -210,11 +208,12 @@ exports.takeAction = functions.https.onCall((data, context) => {
     }
     delete data.gameId;
     let tile = undefined;
-    if (typeof data.tile !== 'undefined')
+    if (typeof data.tile !== "undefined") {
       tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
+    }
     // TODO(ariw): Add extra action information (e.g. penny was added/removed).
     game.actions.unshift(
-      new Action(game.currentPlayer, data.action, tile, data.line, game));
+        new Action(game.currentPlayer, data.action, tile, data.line, game));
     switch (data.action) {
       case ACTIONS.PLAY: {
         // note: this makes the game not work for double sets above 9
@@ -234,8 +233,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
         if (data.line - 1 !== currentPlayerIndex &&
             !game.players[data.line - 1].penny) {
           throw new functions.https.HttpsError(
-             "invalid-argument",
-             "Can't play on another player's line with no penny.");
+              "invalid-argument",
+              "Can't play on another player's line with no penny.");
         }
         if ("line" in game.players[data.line - 1]) {
           const line = game.players[data.line - 1].line;
@@ -289,7 +288,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
           }
           // check for game win condition
           if (game.unusedDoubles.length === 0) {
-            let winner, winningScore = 1000;
+            let winner;
+            let winningScore = 1000;
             for (let i = 0; i < game.players.length; i++) {
               if (game.players[i].score < winningScore) {
                 winningScore = game.players[i].score;
@@ -305,7 +305,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // can only pass if you've either played or drawn
         // TODO(ariw): ensure that you've played at least one tile if you have
         // one that you can play.
-        let currentActions = Action.currentActions(game);
+        const currentActions = Action.currentActions(game);
         if (currentActions.length === 0) {
           throw new functions.https.HttpsError(
               "invalid-argument", "Can't pass without playing or drawing.");
@@ -313,7 +313,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
         // if you did not play on your own and could not have; add a penny.
         // doubles don't count as playing on your own but count if held in
         // reserve. if you played on your own; remove a penny
-        let playedOrDrew = false, playedOnOwn = false;
+        let playedOrDrew = false;
+        let playedOnOwn = false;
         for (let i = 0; i < currentActions.length; i++) {
           const action = currentActions[i];
           if (action.action === ACTIONS.PLAY ||
@@ -354,24 +355,22 @@ exports.takeAction = functions.https.onCall((data, context) => {
       }
     }
     return admin.database().ref(`game/${gameId}`).set(game);
-  })
-  .catch((error) => {
+  }).catch((error) => {
     throw error;
   });
 });
 
 exports.undo = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
-    let game = snapshot.val();
-    if (typeof game.actions === 'undefined' || game.actions.length <= 1) {
+    const game = snapshot.val();
+    if (typeof game.actions === "undefined" || game.actions.length <= 1) {
       // can't undo nothing or initial double
       throw new functions.https.HttpsError(
           "invalid-argument", "Unable to undo initial actions.");
     }
     return admin.database().ref(`game/${data.gameId}`).set(
         JSON.parse(game.actions[0].priorGame));
-  })
-  .catch((error) => {
+  }).catch((error) => {
     throw error;
   });
 });
