@@ -158,7 +158,8 @@ function startRound(game) {
           game.players[j].hand.splice(doubleIndex, 1);
           game.currentPlayer = game.players[j].name;
           game.actions = [new Action(
-            game.currentPlayer, ACTIONS.PLAY, game.currentDouble * 11, j + 1)];
+            game.currentPlayer, ACTIONS.PLAY,
+            new DominoTile(game.currentDouble, game.currentDouble), j + 1)];
           game.unusedDoubles.splice(i, 1);
           foundDouble = true;
           break;
@@ -208,13 +209,15 @@ exports.takeAction = functions.https.onCall((data, context) => {
       }
     }
     delete data.gameId;
+    let tile = undefined;
+    if (data.tile !== undefined)
+      tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
     // TODO(ariw): Add extra action information (e.g. penny was added/removed).
     game.actions.unshift(
-      new Action(game.currentPlayer, data.action, data.tile, data.line, game));
+      new Action(game.currentPlayer, data.action, tile, data.line, game));
     switch (data.action) {
       case ACTIONS.PLAY: {
         // note: this makes the game not work for double sets above 9
-        const tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
         let inHand = false;
         for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
           if (tile.equals(game.players[currentPlayerIndex].hand[i])) {

@@ -322,7 +322,7 @@ class GameInfo extends React.Component {
   }
 }
 
-function getTileImage(tile) {
+function getTileImage(tile, vertical) {
   let rotated = false, pipsLeft = tile.end1, pipsRight = tile.end2;
   if (tile.end2 > tile.end1) {
     rotated = true;
@@ -330,11 +330,11 @@ function getTileImage(tile) {
     pipsRight = tile.end1;
   }
   let style = {width: '60px', height: 'auto'};
-  if (rotated && tile.end1 === tile.end2) {
+  if (rotated && vertical) {
     style['transform'] = 'rotate(270deg)';
   } else if (rotated) {
     style['transform'] = 'rotate(180deg)';
-  } else if (tile.end1 === tile.end2) {
+  } else if (vertical) {
     style['transform'] = 'rotate(90deg)';
   }
   return <img src={`images/${pipsLeft}${pipsRight}.svg`}
@@ -345,7 +345,7 @@ function getPlayerRowFun(currentPlayer) {
   return function(player) {
     let line = ("line" in player? player.line.map(function(tile) {
       if (tile !== null) {
-        return (<span>{getTileImage(tile)}</span>);
+        return (<span>{getTileImage(tile, tile.end1 === tile.end2)}</span>);
       } else {
         return;
       }
@@ -395,7 +395,7 @@ const ACTIONS = {
 
 class Hand extends React.Component {
   handleClick = (e) => {
-    const text = e.target.textContent;
+    const text = e.currentTarget.textContent;
     var takeAction = functions.httpsCallable('takeAction');
     var request = {gameId: gameId, action: ACTIONS.PLAY};
     if (text === "Draw") {
@@ -410,7 +410,7 @@ class Hand extends React.Component {
       this.props.changePage("menu");
       return;
     } else {
-      request.tile = Number(text);
+      request.tile = Number(e.currentTarget.id);
       request.line = prompt(`Which line (1-${this.props.players.length})?`);
       if (request.line === null) {
         return;
@@ -446,7 +446,8 @@ class Hand extends React.Component {
       hand = this.props.players[i].hand.map(function(tile) {
         return (
             <td>
-              <button onClick={handleClick}>{tile.end1}{tile.end2}
+              <button onClick={handleClick} id={`${tile.end1}${tile.end2}`}>
+                {getTileImage(tile, false)}
               </button>
             </td>);
       });
@@ -474,7 +475,9 @@ function renderAction(action) {
   switch (action.action) {
     case ACTIONS.PLAY:
       return (
-        <tr>{action.player} played {action.tile} on the {action.line} line.
+        <tr>
+          {action.player} played {getTileImage(action.tile, false)} on the
+          {action.line} line.
         </tr>);
     case ACTIONS.DRAW:
       return (<tr>{action.player} drew a tile.</tr>);
