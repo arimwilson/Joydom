@@ -322,11 +322,29 @@ class GameInfo extends React.Component {
   }
 }
 
+function getTileImage(tile) {
+  let rotated = false, pipsLeft = tile.end1, pipsRight = tile.end2;
+  if (tile.end2 > tile.end1) {
+    rotated = true;
+    pipsLeft = tile.end2;
+    pipsRight = tile.end1;
+  }
+  let style = {};
+  if (rotated && tile.end1 === tile.end2) {
+    style = {transform: 'rotate(270deg)'};
+  } else if (rotated) {
+    style = {transform: 'rotate(180deg)'};
+  } else if (tile.end1 === tile.end2) {
+    style = {transform: 'rotate(90deg)'};
+  }
+  return <img src={`images/${pipsLeft}${pipsRight}.svg`} style={style}></img>
+}
+
 function getPlayerRowFun(currentPlayer) {
   return function(player) {
     let line = ("line" in player? player.line.map(function(tile) {
       if (tile !== null) {
-        return (<span>{tile.end1}{tile.end2} </span>);
+        return (<span>{getTileImage(tile)}</span>);
       } else {
         return;
       }
