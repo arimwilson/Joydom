@@ -114,7 +114,7 @@ class StartPage extends React.Component {
       name = defaultName;
     }
     let defaultGameId = getRandomInt(0, 1000);
-    gameId = prompt('Game ID? ', defaultGameId);
+    gameId = prompt('Game ID (<1500)? ', defaultGameId);
     if (gameId === null) {
       gameId = defaultGameId;
     }
@@ -194,8 +194,8 @@ class JoinPage extends React.Component {
     if (name === null) {
       name = defaultName;
     }
-    let defaultGameId = getRandomInt(0, 1000);
-    gameId = prompt('Game ID? ', defaultGameId);
+    let defaultGameId = 0;
+    gameId = prompt('Game ID (<1500)? ', defaultGameId);
     if (gameId === null) {
       gameId = defaultGameId;
     }

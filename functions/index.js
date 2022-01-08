@@ -6,6 +6,11 @@ const MAX_DOUBLE = 9;
 
 // TODO(ariw): Don't let players overwrite each others' games.
 exports.startGame = functions.https.onCall((data, context) => {
+  // don't want to waste database storage
+  if (data.gameId >= 1500) {
+    throw new functions.https.HttpsError(
+        "invalid-argument", `Game ID ${data.gameId} is too high`);
+  }
   const players = Array(1);
   players[0] = {name: data.name, score: 0};
   const game = {
