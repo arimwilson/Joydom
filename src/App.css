@@ -1,6 +1,6 @@
 .App {
   text-align: left;
-  background-image: url('images/wood.jpg');
+  background-image: url('./images/wood.jpg');
   min-height: 100vh;
   color: white;
 }
