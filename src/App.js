@@ -337,7 +337,8 @@ function getTileImage(tile) {
   } else if (tile.end1 === tile.end2) {
     style = {transform: 'rotate(90deg)'};
   }
-  return <img src={`images/${pipsLeft}${pipsRight}.svg`} style={style}></img>
+  return <img src={require(`./images/${pipsLeft}${pipsRight}.svg`)}
+              style={style}></img>
 }
 
 function getPlayerRowFun(currentPlayer) {
