@@ -330,9 +330,8 @@ class GameInfo extends React.Component {
 
 class Tile extends React.Component {
   render() {
-    let rotated = false;
-    let pipsLeft = this.props.tile.end1;
-    let pipsRight = this.props.tile.end2;
+    let rotated = false, pipsLeft = this.props.tile.end1,
+        pipsRight = this.props.tile.end2;
     if (pipsRight > pipsLeft) {
       rotated = true;
       pipsLeft = this.props.tile.end2;
@@ -345,6 +344,9 @@ class Tile extends React.Component {
       style['transform'] = 'rotate(180deg)';
     } else if (this.props.vertical) {
       style['transform'] = 'rotate(90deg)';
+    }
+    if (this.props.dragging) {
+      style['opacity'] = 0.5;
     }
     return <img src={`images/${pipsLeft}${pipsRight}.svg`}
                 style={style}
@@ -420,11 +422,11 @@ const HandTile = (props) => {
       isDragging: !!monitor.isDragging()
     })
   }));
+  props.extraAttributes['ref'] = drag;
+  
   return (
-    <span ref={drag} style={{opacity: isDragging? 0.5: 1.0}}>
-      <Tile tile={props.tile} vertical={props.vertical}
-            extraAttributes={props.extraAttributes} />
-    </span>);
+    <Tile tile={props.tile} vertical={props.vertical} dragging={isDragging}
+          extraAttributes={props.extraAttributes} />);
 }
 
 class Hand extends React.Component {
