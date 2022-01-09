@@ -1,10 +1,12 @@
 import React from 'react';
-import './App.css';
-
 import firebase from 'firebase/app';
 import 'firebase/database';
 import 'firebase/functions';
+import { DndProvider } from 'react-dnd';
+import { useDrag } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
+import './App.css';
 import { firebaseConfig } from './firebaseConfig'
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
@@ -276,30 +278,32 @@ class PlayPage extends React.Component {
     return (
       this.state.game !== null &&
       <span className={`PlayPage row`}>
-        <span className="column">
-          <GameInfo
-            state={this.state.game.state}
-            winner={this.state.game.winner}
-            turn={this.state.game.turn}
-            currentDouble={this.state.game.currentDouble}
-            unusedDoubles={this.state.game.unusedDoubles}
-            numBones=
-            {"boneyard" in this.state.game ?
-              this.state.game.boneyard.length : 0}
-          />
-          <Playfield
-            players={this.state.game.players}
-            currentPlayer={this.state.game.currentPlayer} />
-          <Hand
-            currentPlayer={this.state.game.currentPlayer}
-            players={this.state.game.players}
-            changePage={this.props.changePage} />
-        </span>
-        <span className="column">
-          <Actions
-            actions={this.state.game.actions} 
-            players={this.state.game.players} />
-        </span>
+        <DndProvider backend={HTML5Backend}>
+          <span className="column">
+            <GameInfo
+              state={this.state.game.state}
+              winner={this.state.game.winner}
+              turn={this.state.game.turn}
+              currentDouble={this.state.game.currentDouble}
+              unusedDoubles={this.state.game.unusedDoubles}
+              numBones=
+              {"boneyard" in this.state.game ?
+                this.state.game.boneyard.length : 0}
+            />
+            <Playfield
+              players={this.state.game.players}
+              currentPlayer={this.state.game.currentPlayer} />
+            <Hand
+              currentPlayer={this.state.game.currentPlayer}
+              players={this.state.game.players}
+              changePage={this.props.changePage} />
+          </span>
+          <span className="column">
+            <Actions
+              actions={this.state.game.actions} 
+              players={this.state.game.players} />
+          </span>
+        </DndProvider>
       </span>
     )
   }
@@ -404,6 +408,25 @@ const ACTIONS = {
   WALKING: 4,
 }
 
+export const DraggableTypes = {
+  HAND_TILE: 'handtile'
+}
+
+// This is the only new React-style hook because react-dnd works better with it.
+const HandTile = (props) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: DraggableTypes.HAND_TILE,
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging()
+    })
+  }));
+  return (
+    <span ref={drag} style={{opacity: isDragging? 0.5: 1.0}}>
+      <Tile tile={props.tile} vertical={props.vertical}
+            extraAttributes={props.extraAttributes} />
+    </span>);
+}
+
 class Hand extends React.Component {
   handleClick = (e) => {
     const text = e.currentTarget.textContent;
@@ -458,9 +481,9 @@ class Hand extends React.Component {
       hand = this.props.players[i].hand.map(function(tile) {
         return (
             <td>
-              <Tile tile={tile} vertical={false}
-                    extraAttributes={{onClick: handleClick,
-                                      id: `${tile.end1}${tile.end2}`}} />
+              <HandTile tile={tile} vertical={false}
+                        extraAttributes={{onClick: handleClick,
+                                          id: `${tile.end1}${tile.end2}`}} />
             </td>);
       });
     }

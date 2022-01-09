@@ -218,6 +218,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
     delete data.gameId;
     let tile = undefined;
     if (typeof data.tile !== "undefined") {
+      // note: this makes the game not work for double sets above 9
       tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
     }
     // TODO(ariw): Add extra action information (e.g. penny was added/removed).
@@ -225,7 +226,10 @@ exports.takeAction = functions.https.onCall((data, context) => {
         new Action(game.currentPlayer, data.action, tile, data.line, game));
     switch (data.action) {
       case ACTIONS.PLAY: {
-        // note: this makes the game not work for double sets above 9
+        if (data.line < 1 || data.line > game.players.length) {
+          throw new functions.https.HttpsError(
+            "invalid-argument", `Can't play on invalid line ${data.line}`);
+        }
         let inHand = false;
         for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
           if (tile.equals(game.players[currentPlayerIndex].hand[i])) {
