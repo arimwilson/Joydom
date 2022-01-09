@@ -296,7 +296,9 @@ class PlayPage extends React.Component {
             changePage={this.props.changePage} />
         </span>
         <span className="column">
-          <Actions actions={this.state.game.actions} />
+          <Actions
+            actions={this.state.game.actions} 
+            players={this.state.game.players} />
         </span>
       </span>
     )
@@ -420,7 +422,8 @@ class Hand extends React.Component {
       return;
     } else {
       request.tile = Number(e.currentTarget.id);
-      request.line = prompt(`Which line (1-${this.props.players.length})?`);
+      request.line = parseInt(
+          prompt(`Which line (1-${this.props.players.length})?`));
       if (request.line === null) {
         return;
       }
@@ -484,11 +487,19 @@ class Action extends React.Component {
   render() {
     switch (this.props.action.action) {
       case ACTIONS.PLAY:
+        let playedName = this.props.players[this.props.action.line - 1].name;
+        console.log(`9${this.props.action.player}9`);
+        console.log(`9${playedName}9`);
+        if (this.props.action.player === playedName) {
+          playedName = "their";
+        } else {
+          playedName += "'s";
+        }
         return (
           <tr>
             {this.props.action.player} played{' '}
-            <Tile tile={this.props.action.tile} vertical={false} /> on the{' '}
-            {this.props.action.line} line.
+            <Tile tile={this.props.action.tile} vertical={false} /> on{' '}
+            {playedName} line.
           </tr>);
       case ACTIONS.DRAW:
         return (<tr>{this.props.action.player} drew a tile.</tr>);
@@ -517,9 +528,10 @@ class Actions extends React.Component {
 
   render() {
     let actions = "none";
+    let players = this.props.players;
     if (typeof this.props.actions !== 'undefined') {
       actions = this.props.actions.map(function(action) {
-        return <Action action={action} />;
+        return <Action action={action} players={players} />;
       });
     }
     return (
