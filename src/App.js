@@ -113,7 +113,7 @@ class StartPage extends React.Component {
     if (name === null) {
       name = defaultName;
     }
-    let defaultGameId = getRandomInt(0, 1000);
+    let defaultGameId = getRandomInt(0, 1500);
     gameId = prompt('Game ID (<1500)? ', defaultGameId);
     if (gameId === null) {
       gameId = defaultGameId;
@@ -322,51 +322,59 @@ class GameInfo extends React.Component {
   }
 }
 
-function getTileImage(tile, vertical, extraAttributes) {
-  let rotated = false, pipsLeft = tile.end1, pipsRight = tile.end2;
-  if (tile.end2 > tile.end1) {
-    rotated = true;
-    pipsLeft = tile.end2;
-    pipsRight = tile.end1;
+class Tile extends React.Component {
+  render() {
+    let rotated = false;
+    let pipsLeft = this.props.tile.end1;
+    let pipsRight = this.props.tile.end2;
+    if (pipsRight > pipsLeft) {
+      rotated = true;
+      pipsLeft = this.props.tile.end2;
+      pipsRight = this.props.tile.end1;
+    }
+    let style = {width: '60px', height: 'auto'};
+    if (rotated && this.props.vertical) {
+      style['transform'] = 'rotate(270deg)';
+    } else if (rotated) {
+      style['transform'] = 'rotate(180deg)';
+    } else if (this.props.vertical) {
+      style['transform'] = 'rotate(90deg)';
+    }
+    return <img src={`images/${pipsLeft}${pipsRight}.svg`}
+                style={style}
+                {...this.props.extraAttributes}></img>
   }
-  let style = {width: '60px', height: 'auto'};
-  if (rotated && vertical) {
-    style['transform'] = 'rotate(270deg)';
-  } else if (rotated) {
-    style['transform'] = 'rotate(180deg)';
-  } else if (vertical) {
-    style['transform'] = 'rotate(90deg)';
-  }
-  return <img src={`images/${pipsLeft}${pipsRight}.svg`}
-              style={style}
-              {...extraAttributes}></img>
 }
 
-function getPlayerRowFun(currentPlayer) {
-  return function(player) {
-    let line = ("line" in player? player.line.map(function(tile) {
-      if (tile !== null) {
-        return (<span>{getTileImage(tile, tile.end1 === tile.end2)}</span>);
-      } else {
-        return;
-      }
-    }): <span>empty</span>);
-    const isCurrentPlayer = player.name === currentPlayer;
+class PlayerRow extends React.Component {
+  render() {
+    let line = ("line" in this.props.player?
+      this.props.player.line.map(function(tile) {
+        if (tile !== null) {
+          return <Tile tile={tile} vertical={tile.end1 === tile.end2} />;
+        } else {
+          return;
+        }
+      }):
+      <span>empty</span>);
+    const isCurrentPlayer = this.props.player.name === this.props.currentPlayer;
     return (
       <tr>
-        <td>{isCurrentPlayer? <u>{player.name}</u> : player.name}</td>
-        <td>{player.score}</td>
-        <td>{player.penny? 'yes': 'no'}</td>
-        <td>{("walking" in player)? player.walking: 'no'}</td>
+        <td>{isCurrentPlayer? <u>{this.props.player.name}</u> : this.props.player.name}</td>
+        <td>{this.props.player.score}</td>
+        <td>{this.props.player.penny? 'yes': 'no'}</td>
+        <td>{("walking" in this.props.player)? this.props.player.walking: 'no'}</td>
         <td>{line}</td>
-      </tr>);
+      </tr>);    
   }
 }
 
 class Playfield extends React.Component {
   render() {
-    let players = this.props.players.map(getPlayerRowFun(
-        this.props.currentPlayer));
+    let currentPlayer = this.props.currentPlayer;
+    let players = this.props.players.map(function(player) {
+      return <PlayerRow player={player} currentPlayer={currentPlayer} />;
+    });
     return (
       <span className="Playfield">
         <p>
@@ -447,9 +455,9 @@ class Hand extends React.Component {
       hand = this.props.players[i].hand.map(function(tile) {
         return (
             <td>
-              {getTileImage(
-                tile, false,
-                {onClick: handleClick, id: `${tile.end1}${tile.end2}`})}
+              <Tile tile={tile} vertical={false}
+                    extraAttributes={{onClick: handleClick,
+                                      id: `${tile.end1}${tile.end2}`}} />
             </td>);
       });
     }
@@ -472,21 +480,25 @@ class Hand extends React.Component {
   }
 }
 
-function renderAction(action) {
-  switch (action.action) {
-    case ACTIONS.PLAY:
-      return (
-        <tr>
-          {action.player} played {getTileImage(action.tile, false)} on the {action.line} line.
-        </tr>);
-    case ACTIONS.DRAW:
-      return (<tr>{action.player} drew a tile.</tr>);
-    case ACTIONS.PASS:
-      return (<tr>{action.player} ended their turn.</tr>);
-    case ACTIONS.WALKING:
-      return (<tr>{action.player} is walking!</tr>);
-    default:
-      return (<tr>UNKNOWN ACTION {action.action}</tr>);
+class Action extends React.Component {
+  render() {
+    switch (this.props.action.action) {
+      case ACTIONS.PLAY:
+        return (
+          <tr>
+            {this.props.action.player} played{' '}
+            <Tile tile={this.props.action.tile} vertical={false} /> on the{' '}
+            {this.props.action.line} line.
+          </tr>);
+      case ACTIONS.DRAW:
+        return (<tr>{this.props.action.player} drew a tile.</tr>);
+      case ACTIONS.PASS:
+        return (<tr>{this.props.action.player} ended their turn.</tr>);
+      case ACTIONS.WALKING:
+        return (<tr>{this.props.action.player} is walking!</tr>);
+      default:
+        return (<tr>UNKNOWN ACTION {this.props.action.action}</tr>);
+    }
   }
 }
 
@@ -506,7 +518,9 @@ class Actions extends React.Component {
   render() {
     let actions = "none";
     if (typeof this.props.actions !== 'undefined') {
-      actions = this.props.actions.map(renderAction);
+      actions = this.props.actions.map(function(action) {
+        return <Action action={action} />;
+      });
     }
     return (
       <span className="Actions">
