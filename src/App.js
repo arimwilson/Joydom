@@ -4,6 +4,7 @@ import 'firebase/database';
 import 'firebase/functions';
 import { DndProvider } from 'react-dnd';
 import { useDrag } from 'react-dnd'
+import { useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import './App.css';
@@ -354,6 +355,19 @@ class Tile extends React.Component {
   }
 }
 
+// Use new React-style hook because react-dnd works better with it.
+const LineDrop = (props) => {
+  const [, drop] = useDrop(
+    () => ({
+      accept: DraggableTypes.HAND_TILE,
+      drop: () => playTile(monitor.getItem(), props.line)
+    }),
+    [props]
+  );
+  let style = {width: '60px', height: '30px', color: 'yellow'};
+  return <span style={style} />;
+}
+
 class PlayerRow extends React.Component {
   render() {
     let line = ("line" in this.props.player?
@@ -372,7 +386,7 @@ class PlayerRow extends React.Component {
         <td>{this.props.player.score}</td>
         <td>{this.props.player.penny? 'yes': 'no'}</td>
         <td>{("walking" in this.props.player)? this.props.player.walking: 'no'}</td>
-        <td>{line}</td>
+        <td>{line} <LineDrop line={this.props.line} /></td>
       </tr>);    
   }
 }
@@ -380,8 +394,9 @@ class PlayerRow extends React.Component {
 class Playfield extends React.Component {
   render() {
     let currentPlayer = this.props.currentPlayer;
-    let players = this.props.players.map(function(player) {
-      return <PlayerRow player={player} currentPlayer={currentPlayer} />;
+    let players = this.props.players.map(function(player, line) {
+      return <PlayerRow player={player} currentPlayer={currentPlayer}
+                        line={line + 1} />;
     });
     return (
       <span className="Playfield">
@@ -414,7 +429,7 @@ export const DraggableTypes = {
   HAND_TILE: 'handtile'
 }
 
-// This is the only new React-style hook because react-dnd works better with it.
+// Use new React-style hook because react-dnd works better with it.
 const HandTile = (props) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: DraggableTypes.HAND_TILE,
@@ -513,8 +528,6 @@ class Action extends React.Component {
     switch (this.props.action.action) {
       case ACTIONS.PLAY:
         let playedName = this.props.players[this.props.action.line - 1].name;
-        console.log(`9${this.props.action.player}9`);
-        console.log(`9${playedName}9`);
         if (this.props.action.player === playedName) {
           playedName = "their";
         } else {
