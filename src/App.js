@@ -355,17 +355,21 @@ class Tile extends React.Component {
   }
 }
 
+function playTile(tile, line) {
+  console.log(tile);
+  console.log(line);
+}
+
 // Use new React-style hook because react-dnd works better with it.
 const LineDrop = (props) => {
   const [, drop] = useDrop(
     () => ({
       accept: DraggableTypes.HAND_TILE,
-      drop: () => playTile(monitor.getItem(), props.line)
+      drop: (monitor) => playTile(monitor.getItem(), props.line)
     }),
     [props]
   );
-  let style = {width: '60px', height: '30px', color: 'yellow'};
-  return <span style={style} />;
+  return <div className="LineDrop" ref={drop} />;
 }
 
 class PlayerRow extends React.Component {

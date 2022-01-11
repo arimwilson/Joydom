@@ -53,6 +53,15 @@
   min-height: 70vh;
 }
 
+.LineDrop {
+  position: 'absolute';
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 30px;
+  color: yellow;
+}
+
 .Hand {
   display: flex;
   justify-content: left;
