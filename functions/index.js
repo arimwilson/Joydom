@@ -228,7 +228,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
       case ACTIONS.PLAY: {
         if (data.line < 1 || data.line > game.players.length) {
           throw new functions.https.HttpsError(
-            "invalid-argument", `Can't play on invalid line ${data.line}`);
+              "invalid-argument", `Can't play on invalid line ${data.line}`);
         }
         let inHand = false;
         for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
