@@ -356,20 +356,38 @@ class Tile extends React.Component {
 }
 
 function playTile(tile, line) {
-  console.log(tile);
-  console.log(line);
+  var takeAction = functions.httpsCallable('takeAction');
+  var request = {gameId: gameId, action: ACTIONS.PLAY};
+  request.tile = tile.end1 * 10 + tile.end2;
+  request.line = line;
+  takeAction(request).then((response) => {
+  }).catch((error) => {
+    alert(`Code: ${error.code}. Message: ${error.message}`);
+  });
 }
 
 // Use new React-style hook because react-dnd works better with it.
 const LineDrop = (props) => {
-  const [, drop] = useDrop(
+  const [{ canDrop }, drop] = useDrop(
     () => ({
       accept: DraggableTypes.HAND_TILE,
-      drop: (monitor) => playTile(monitor.getItem(), props.line)
+      drop: (item) => playTile(item, props.line),
+      collect: (monitor) => ({
+        canDrop: !!monitor.canDrop()
+      })
     }),
     [props]
   );
-  return <div className="LineDrop" ref={drop} />;
+  let style = {
+    'display': 'inline-block',
+    'width': '60px',
+    'height': '30px',
+    'background': 'silver',
+  }
+  if (!canDrop) {
+    style['display'] = 'none';
+  }
+  return <div className="LineDrop" ref={drop} style={style} />;
 }
 
 class PlayerRow extends React.Component {
@@ -382,7 +400,7 @@ class PlayerRow extends React.Component {
           return;
         }
       }):
-      <span>empty</span>);
+      undefined);
     const isCurrentPlayer = this.props.player.name === this.props.currentPlayer;
     return (
       <tr>
@@ -437,6 +455,7 @@ export const DraggableTypes = {
 const HandTile = (props) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: DraggableTypes.HAND_TILE,
+    item: props.tile,
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
     })
