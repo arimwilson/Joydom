@@ -1,4 +1,6 @@
 .App {
+  display: flex;
+  flex-direction: column;
   text-align: left;
   background-image: url('images/wood.jpg');
   min-height: 100vh;
@@ -8,59 +10,38 @@
 .App header {
   background-color: gray;
   min-height: 5vh;
-  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  text-align: center;
   color: black;
 }
 
 .MenuPage {
-  display: float;
   align-items: left;
   min-height: 5vh;
 }
 
 .AboutPage {
-  display: float;
   align-items: left;
   min-height: 5vh;
 }
 
-.row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.column {
-  display: flex;
-  flex-direction: column;
-  flex-basis: 100%;
-  flex: 1;
-}
-
 .GameInfo {
-  display: flex;
   align-items: left;
   min-height: 5vh;
 }
 
 .Playfield {
-  display: flex;
   justify-content: left;
   min-height: 70vh;
 }
 
 .Hand {
-  display: flex;
   justify-content: left;
   min-height: 20vh;
 }
 
 .Actions {
-  display: flex;
   align-items: left;
   min-height: 5vh;
 }

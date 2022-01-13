@@ -347,6 +347,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
         if (playedOnOwn) {
           game.players[currentPlayerIndex].penny = false;
         } else if (!couldHavePlayedOnOwn(
+            // TODO(ariw): This needs to correctly handle the case of playing a
+            // double on your own by itself (which should get you a penny).
             game.currentDouble, game.players[currentPlayerIndex].line,
             game.players[currentPlayerIndex].hand)) {
           game.players[currentPlayerIndex].penny = true;

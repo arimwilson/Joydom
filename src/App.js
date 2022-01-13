@@ -2,10 +2,15 @@ import React from 'react';
 import firebase from 'firebase/app';
 import 'firebase/database';
 import 'firebase/functions';
+
 import { DndProvider } from 'react-dnd';
 import { useDrag } from 'react-dnd'
 import { useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
 
 import './App.css';
 import { firebaseConfig } from './firebaseConfig'
@@ -63,7 +68,9 @@ class App extends React.Component {
     return (
       <div className="App">
         <header>
-          <h2>Joyce Dominoes</h2>
+          <h3>
+            Joyce Dominoes
+          </h3>
         </header>
         {page}
       </div>
@@ -88,9 +95,11 @@ class MenuPage extends React.Component {
     return (
       <span className="MenuPage">
         Welcome to Joyce Dominoes!<br />
-        <button onClick={this.start}>Start game</button><br />
-        <button onClick={this.join}>Join game</button><br />
-        <button onClick={this.about}>How to play / about</button>
+        <ButtonGroup vertical>
+          <Button variant="primary" onClick={this.start}>Start game</Button>
+          <Button variant="primary" onClick={this.join}>Join game</Button>
+          <Button variant="primary" onClick={this.about}>How to play / about</Button>
+        </ButtonGroup>
       </span>
     );
   }
@@ -171,7 +180,7 @@ class StartPage extends React.Component {
         <ul>
         {players}
         </ul>
-        <br /><button onClick={this.menu}>Back</button>
+        <br /><Button variant="secondary" onClick={this.menu}>Back</Button>
       </span>
     );
   }
@@ -240,7 +249,7 @@ class JoinPage extends React.Component {
         <ul>
         {players}
         </ul>
-        <br /><button onClick={this.menu}>Back</button>
+        <br /><Button variant="primary" onClick={this.menu}>Back</Button>
       </span>
     );
   }
@@ -255,12 +264,18 @@ class AboutPage extends React.Component {
     return (
       <span className="AboutPage">
         <span dangerouslySetInnerHTML={aboutPage} />
-        <br /><button onClick={this.menu}>Back</button>
+        <br /><Button variant="primary" onClick={this.menu}>Back</Button>
       </span>
     );
   }
 }
 
+// TODO(ariw): Weird freaking bugs around drag-n-drop:
+// 1) Sometimes DnD doesn't seem to work at all (no dragging, no drop targets
+//    appearing).
+// 2) If a previous tile in someone's hand has been played, dragging a later
+//    tile onto the board acts as though the 1-previous tile has been played.
+//    (as though the HandTile for the previous piece was still there).
 class PlayPage extends React.Component {
   constructor(props) {
     super(props);
@@ -278,32 +293,28 @@ class PlayPage extends React.Component {
   render() {
     return (
       this.state.game !== null &&
-      <span className={`PlayPage row`}>
+      <span className="PlayPage">
         <DndProvider backend={HTML5Backend}>
-          <span className="column">
-            <GameInfo
-              state={this.state.game.state}
-              winner={this.state.game.winner}
-              turn={this.state.game.turn}
-              currentDouble={this.state.game.currentDouble}
-              unusedDoubles={this.state.game.unusedDoubles}
-              numBones=
-              {"boneyard" in this.state.game ?
-                this.state.game.boneyard.length : 0}
-            />
-            <Playfield
-              players={this.state.game.players}
-              currentPlayer={this.state.game.currentPlayer} />
-            <Hand
-              currentPlayer={this.state.game.currentPlayer}
-              players={this.state.game.players}
-              changePage={this.props.changePage} />
-          </span>
-          <span className="column">
-            <Actions
-              actions={this.state.game.actions} 
-              players={this.state.game.players} />
-          </span>
+          <GameInfo
+            state={this.state.game.state}
+            winner={this.state.game.winner}
+            turn={this.state.game.turn}
+            currentDouble={this.state.game.currentDouble}
+            unusedDoubles={this.state.game.unusedDoubles}
+            numBones=
+            {"boneyard" in this.state.game ?
+              this.state.game.boneyard.length : 0}
+          />
+          <Playfield
+            players={this.state.game.players}
+            currentPlayer={this.state.game.currentPlayer} />
+          <Hand
+            currentPlayer={this.state.game.currentPlayer}
+            players={this.state.game.players}
+            changePage={this.props.changePage} />
+          <Actions
+            actions={this.state.game.actions}
+            players={this.state.game.players} />
         </DndProvider>
       </span>
     )
@@ -487,7 +498,7 @@ class Hand extends React.Component {
       request.tile = Number(e.currentTarget.id);
       request.line = parseInt(
           prompt(`Which line (1-${this.props.players.length})?`));
-      if (request.line === null) {
+      if (Number.isNaN(request.line)) {
         return;
       }
     }
@@ -503,8 +514,10 @@ class Hand extends React.Component {
       return (
         <span className="Hand">
           <p>
-            <b>{this.props.currentPlayer}'s turn.</b>
-            <br /><button onClick={handleClick}>Exit game</button>
+            <b>{this.props.currentPlayer}'s turn.</b><br />
+            <Button variant="secondary" onClick={handleClick}>
+              Exit game
+            </Button>
           </p>
         </span>
       );
@@ -532,14 +545,12 @@ class Hand extends React.Component {
         <p>
           <b>{this.props.currentPlayer}'s hand:</b>
           <table><tr>{hand}</tr></table>
-          <table>
-            <tr>
-              <td><button onClick={handleClick}>Draw</button></td>
-              <td><button onClick={handleClick}>Pass/end turn</button></td>
-              <td><button onClick={handleClick}>Walking</button></td>
-            </tr>
-          </table>
-          <br /><button onClick={handleClick}>Exit game</button>
+          <ButtonGroup>
+            <Button variant="primary" onClick={handleClick}>Draw</Button>
+            <Button variant="primary" onClick={handleClick}>Pass/end turn</Button>
+            <Button variant="primary" onClick={handleClick}>Walking</Button>
+          </ButtonGroup>
+          <br /><Button variant="secondary" onClick={handleClick}>Exit game</Button>
         </p>
       </span>
     );
@@ -557,19 +568,19 @@ class Action extends React.Component {
           playedName += "'s";
         }
         return (
-          <tr>
+          <tr><td>
             {this.props.action.player} played{' '}
             <Tile tile={this.props.action.tile} vertical={false} /> on{' '}
             {playedName} line.
-          </tr>);
+          </td></tr>);
       case ACTIONS.DRAW:
-        return (<tr>{this.props.action.player} drew a tile.</tr>);
+        return (<tr><td>{this.props.action.player} drew a tile.</td></tr>);
       case ACTIONS.PASS:
-        return (<tr>{this.props.action.player} ended their turn.</tr>);
+        return (<tr><td>{this.props.action.player} ended their turn.</td></tr>);
       case ACTIONS.WALKING:
-        return (<tr>{this.props.action.player} is walking!</tr>);
+        return (<tr><td>{this.props.action.player} is walking!</td></tr>);
       default:
-        return (<tr>UNKNOWN ACTION {this.props.action.action}</tr>);
+        return (<tr><td>UNKNOWN ACTION {this.props.action.action}</td></tr>);
     }
   }
 }
@@ -600,7 +611,7 @@ class Actions extends React.Component {
         <p>
           <b>Round actions:</b>
           <table>
-            <button onClick={this.undo}>Undo</button>
+            <tr><td><Button variant="info" onClick={this.undo}>Undo</Button></td></tr>
             {actions}
           </table>
         </p>
