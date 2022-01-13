@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import firebase from 'firebase/app';
 import 'firebase/database';
 import 'firebase/functions';
@@ -10,7 +10,8 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Button from 'react-bootstrap/Button';
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Form from 'react-bootstrap/Form';
+import Modal from 'react-bootstrap/Modal';
 
 import './App.css';
 import { firebaseConfig } from './firebaseConfig'
@@ -35,6 +36,7 @@ if (window.location.hostname === "localhost" ||
 
 var name;
 var gameId;
+var numPlayers;
 var aboutPage = { __html: require('./about.html.js') };
 
 function getRandomInt(min, max) {
@@ -59,18 +61,18 @@ class App extends React.Component {
       page = <StartPage changePage={this.changePage} />;
     } else if (this.state.page === "join") {
       page = <JoinPage changePage={this.changePage} />;
-    } else if (this.state.page === "play") {
-      page = <PlayPage changePage={this.changePage} />;
     } else {
-      page = <AboutPage changePage={this.changePage} />;
+      page = <PlayPage changePage={this.changePage} />;
     }
 
     return (
       <div className="App">
         <header>
+          <AboutModal />
           <h3>
             Joyce Dominoes
           </h3>
+          <Button variant="primary">Menu</Button>
         </header>
         {page}
       </div>
@@ -78,28 +80,95 @@ class App extends React.Component {
   }
 }
 
+const AboutModal = () => {
+  const [show, setShow] = useState(false);
+
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
+  return (
+    <>
+      <Button variant="primary" onClick={handleShow}>
+        About
+      </Button>
+
+      <Modal className="AboutModal" show={show} onHide={handleClose} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>How to play / about</Modal.Title>
+        </Modal.Header>
+        <Modal.Body><span dangerouslySetInnerHTML={aboutPage} /></Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+}
+
 class MenuPage extends React.Component {
+  constructor(props) {
+    super(props);
+    let defaultNames = [
+      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
+      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
+    this.state = {
+      name: defaultNames[getRandomInt(0, defaultNames.length)],
+      gameId: getRandomInt(0, 1500),
+      numPlayers: 4,
+    };
+  }
+
   start = () => {
+    name = this.state.name;
+    gameId = this.state.gameId;
+    numPlayers = this.state.numPlayers;
     this.props.changePage("start");
   }
 
   join = () => {
+    name = this.state.name;
+    gameId = this.state.gameId;
     this.props.changePage("join");
-  }
-
-  about = () => {
-    this.props.changePage("about");
   }
 
   render() {
     return (
       <span className="MenuPage">
         Welcome to Joyce Dominoes!<br />
-        <ButtonGroup vertical>
-          <Button variant="primary" onClick={this.start}>Start game</Button>
-          <Button variant="primary" onClick={this.join}>Join game</Button>
-          <Button variant="primary" onClick={this.about}>How to play / about</Button>
-        </ButtonGroup>
+        <Form>
+          <Form.Group className="mb-3">
+            <Form.Label>Player name</Form.Label>
+            <Form.Control
+                type="text" name="name" value={this.state.name}
+                onChange={(e) => {this.setState({ "name": e.target.value })}}/>
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Game ID</Form.Label>
+            <Form.Control
+                type="text" name="gameId" value={this.state.gameId}
+                onChange={
+                  (e) => {this.setState({ "gameId": e.target.value })}
+                }/>
+            <Form.Text>
+              Enter a unique game ID &lt;1500.
+            </Form.Text>
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Number of players</Form.Label>
+            <Form.Control
+                  type="text" name="numPlayers" value={this.state.numPlayers}
+                  onChange={
+                    (e) => {this.setState({ "numPlayers": e.target.value })}
+                  }/>
+            <Form.Text>
+              Not needed if joining game.
+            </Form.Text>
+          </Form.Group>
+          <Button variant="primary" onClick={this.start}>Start</Button>{' '}
+          <Button variant="primary" onClick={this.join}>Join</Button>
+        </Form>
       </span>
     );
   }
@@ -117,24 +186,6 @@ class StartPage extends React.Component {
   }
 
   componentDidMount() {
-    let defaultNames = [
-      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
-      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
-    let defaultName = defaultNames[getRandomInt(0, defaultNames.length)]
-    name = prompt('name? ', defaultName);
-    if (name === null) {
-      name = defaultName;
-    }
-    let defaultGameId = getRandomInt(0, 1500);
-    gameId = prompt('Game ID (<1500)? ', defaultGameId);
-    if (gameId === null) {
-      gameId = defaultGameId;
-    }
-    let defaultNumPlayers = "4";
-    let numPlayers = prompt('Number of players? ', defaultNumPlayers);
-    if (numPlayers === null) {
-      numPlayers = defaultNumPlayers;
-    }
     var startGame = functions.httpsCallable('startGame');
     startGame({
       name: name,
@@ -198,19 +249,6 @@ class JoinPage extends React.Component {
   }
 
   componentDidMount() {
-    let defaultNames = [
-      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
-      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
-    let defaultName = defaultNames[getRandomInt(0, defaultNames.length)]
-    name = prompt('name? ', defaultName);
-    if (name === null) {
-      name = defaultName;
-    }
-    let defaultGameId = 0;
-    gameId = prompt('Game ID (<1500)? ', defaultGameId);
-    if (gameId === null) {
-      gameId = defaultGameId;
-    }
     var joinGame = functions.httpsCallable('joinGame');
     joinGame({
       name: name,
@@ -249,22 +287,7 @@ class JoinPage extends React.Component {
         <ul>
         {players}
         </ul>
-        <br /><Button variant="primary" onClick={this.menu}>Back</Button>
-      </span>
-    );
-  }
-}
-
-class AboutPage extends React.Component {
-  menu = () => {
-    this.props.changePage("menu");
-  }
-
-  render() {
-    return (
-      <span className="AboutPage">
-        <span dangerouslySetInnerHTML={aboutPage} />
-        <br /><Button variant="primary" onClick={this.menu}>Back</Button>
+        <br /><Button variant="secondary" onClick={this.menu}>Back</Button>
       </span>
     );
   }
@@ -330,6 +353,7 @@ class GameInfo extends React.Component {
           <ul>
             {typeof this.props.winner !== 'undefined' &&
             <li><b>WINNER IS {this.props.winner}</b></li>}
+            <li>Game id: {gameId}</li>
             <li>Round double: {this.props.currentDouble}</li>
             <li>Unused doubles: {this.props.unusedDoubles}</li>
             <li>Turn: {this.props.turn + 1}</li>
@@ -377,7 +401,6 @@ function playTile(tile, line) {
   });
 }
 
-// Use new React-style hook because react-dnd works better with it.
 const LineDrop = (props) => {
   const [{ canDrop }, drop] = useDrop(
     () => ({
@@ -462,7 +485,6 @@ export const DraggableTypes = {
   HAND_TILE: 'handtile'
 }
 
-// Use new React-style hook because react-dnd works better with it.
 const HandTile = (props) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: DraggableTypes.HAND_TILE,
@@ -545,12 +567,10 @@ class Hand extends React.Component {
         <p>
           <b>{this.props.currentPlayer}'s hand:</b>
           <table><tr>{hand}</tr></table>
-          <ButtonGroup>
-            <Button variant="primary" onClick={handleClick}>Draw</Button>
-            <Button variant="primary" onClick={handleClick}>Pass/end turn</Button>
-            <Button variant="primary" onClick={handleClick}>Walking</Button>
-          </ButtonGroup>
-          <br /><Button variant="secondary" onClick={handleClick}>Exit game</Button>
+          <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
+          <Button variant="primary" onClick={handleClick}>Pass/end turn</Button>{' '}
+          <Button variant="primary" onClick={handleClick}>Walking</Button>{' '}
+          <Button variant="secondary" onClick={handleClick}>Exit game</Button>
         </p>
       </span>
     );
