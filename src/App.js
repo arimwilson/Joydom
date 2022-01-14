@@ -10,6 +10,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 
@@ -68,11 +69,10 @@ class App extends React.Component {
     return (
       <div className="App">
         <header>
-          <AboutModal />
           <h3>
-            Joyce Dominoes
+            Joyce Dominoes{' '}
+            <AboutModal />
           </h3>
-          <Button variant="primary">Menu</Button>
         </header>
         {page}
       </div>
@@ -88,9 +88,8 @@ const AboutModal = () => {
 
   return (
     <>
-      <Button variant="primary" onClick={handleShow}>
-        About
-      </Button>
+      <Button as="img" variant="outline-dark" src="images/about.svg" alt="about"
+              onClick={handleShow} />
 
       <Modal className="AboutModal" show={show} onHide={handleClose} size="lg">
         <Modal.Header closeButton>
@@ -116,7 +115,7 @@ class MenuPage extends React.Component {
     this.state = {
       name: defaultNames[getRandomInt(0, defaultNames.length)],
       gameId: getRandomInt(0, 1500),
-      numPlayers: 4,
+      numPlayers: 2,
     };
   }
 
@@ -334,10 +333,8 @@ class PlayPage extends React.Component {
           <Hand
             currentPlayer={this.state.game.currentPlayer}
             players={this.state.game.players}
-            changePage={this.props.changePage} />
-          <Actions
             actions={this.state.game.actions}
-            players={this.state.game.players} />
+            changePage={this.props.changePage} />
         </DndProvider>
       </span>
     )
@@ -373,7 +370,7 @@ class Tile extends React.Component {
       pipsLeft = this.props.tile.end2;
       pipsRight = this.props.tile.end1;
     }
-    let style = {width: '60px', height: 'auto'};
+    let style = {width: 'auto', height: '30px'};
     if (rotated && this.props.vertical) {
       style['transform'] = 'rotate(270deg)';
     } else if (rotated) {
@@ -385,8 +382,8 @@ class Tile extends React.Component {
       style['opacity'] = 0.5;
     }
     return <img src={`images/${pipsLeft}${pipsRight}.svg`}
-                style={style}
-                {...this.props.extraAttributes}></img>
+                style={style} alt={`${pipsLeft}${pipsRight}`}
+                {...this.props.extraAttributes} />
   }
 }
 
@@ -424,6 +421,24 @@ const LineDrop = (props) => {
   return <div className="LineDrop" ref={drop} style={style} />;
 }
 
+const Penny = (props) => {
+  if (props.penny) {
+    return <img src="images/penny.svg" style={ {height: "30px"} } alt="penny "/>
+  } else {
+    return null;
+  }
+}
+
+const Walking = (props) => {
+  if (props.walking) {
+    return <img src="images/walking.svg" style={ {height: "30px"} }
+                alt="walking" />
+  } else {
+    return null;
+  }
+
+}
+
 class PlayerRow extends React.Component {
   render() {
     let line = ("line" in this.props.player?
@@ -431,18 +446,24 @@ class PlayerRow extends React.Component {
         if (tile !== null) {
           return <Tile tile={tile} vertical={tile.end1 === tile.end2} />;
         } else {
-          return;
+          return null;
         }
       }):
       undefined);
     const isCurrentPlayer = this.props.player.name === this.props.currentPlayer;
     return (
       <tr>
-        <td>{isCurrentPlayer? <u>{this.props.player.name}</u> : this.props.player.name}</td>
-        <td>{this.props.player.score}</td>
-        <td>{this.props.player.penny? 'yes': 'no'}</td>
-        <td>{("walking" in this.props.player)? this.props.player.walking: 'no'}</td>
-        <td>{line} <LineDrop line={this.props.line} /></td>
+        <td>
+          {isCurrentPlayer?
+              <u>{this.props.player.name}</u> :
+              this.props.player.name}
+          <Walking walking={"walking" in this.props.player} />
+        </td>
+        <td>
+          {line}
+          <LineDrop line={this.props.line} />
+          <Penny penny={this.props.player.penny} />
+        </td>
       </tr>);    
   }
 }
@@ -459,13 +480,6 @@ class Playfield extends React.Component {
         <p>
           <b>Playfield:</b>
           <table>
-            <tr>
-              <th>Name</th>
-              <th>Score</th>
-              <th>Penny?</th>
-              <th>Walking?</th>
-              <th style={{ whiteSpace: 'nowrap' }}>Line</th>
-            </tr>
             {players}
           </table>
         </p>
@@ -501,6 +515,11 @@ const HandTile = (props) => {
 }
 
 class Hand extends React.Component {
+  constructor(props) {
+    super(props);
+    this.setState({showActions: false, showScores: false});
+  }
+
   handleClick = (e) => {
     const text = e.currentTarget.textContent;
     var takeAction = functions.httpsCallable('takeAction');
@@ -567,10 +586,25 @@ class Hand extends React.Component {
         <p>
           <b>{this.props.currentPlayer}'s hand:</b>
           <table><tr>{hand}</tr></table>
-          <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
-          <Button variant="primary" onClick={handleClick}>Pass/end turn</Button>{' '}
-          <Button variant="primary" onClick={handleClick}>Walking</Button>{' '}
-          <Button variant="secondary" onClick={handleClick}>Exit game</Button>
+          <Dropdown>
+            <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
+            <Button variant="primary" onClick={handleClick}>
+              Pass/end turn
+            </Button>{' '}
+            <Button variant="primary" onClick={handleClick}>
+              Walking
+            </Button>{' '}
+            <Dropdown.Toggle>
+              ...
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>
+              <ActionModal
+                  actions={this.props.actions} players={this.props.players} />
+              <ScoreModal players={this.props.players} />
+            </Dropdown.Menu>{' '}
+            <Button variant="secondary" onClick={handleClick}>Exit game</Button>
+          </Dropdown>
         </p>
       </span>
     );
@@ -605,39 +639,83 @@ class Action extends React.Component {
   }
 }
 
-class Actions extends React.Component {
-  constructor(props) {
-    super(props);
-    this.undo = this.undo.bind(this);
-  }
 
-  undo() {
+const ActionModal = (props) => {
+  const [show, setShow] = useState(false);
+
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
+  const undo = () => {
     (functions.httpsCallable('undo')({gameId: gameId})).then((response) => {
     }).catch((error) => {
       alert(`Code: ${error.code}. Message: ${error.message}`);
     });
   }
 
-  render() {
-    let actions = "none";
-    let players = this.props.players;
-    if (typeof this.props.actions !== 'undefined') {
-      actions = this.props.actions.map(function(action) {
-        return <Action action={action} players={players} />;
-      });
-    }
-    return (
-      <span className="Actions">
-        <p>
-          <b>Round actions:</b>
+  let actions = "none";
+  let players = props.players;
+  if (typeof props.actions !== 'undefined') {
+    actions = props.actions.map(function(action) {
+      return <Action action={action} players={players} />;
+    });
+  }
+  return (
+    <>
+      <Dropdown.Item onClick={handleShow}>Recent actions</Dropdown.Item>
+
+      <Modal className="ActionModal" show={show} onHide={handleClose} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Recent actions</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
           <table>
-            <tr><td><Button variant="info" onClick={this.undo}>Undo</Button></td></tr>
+            <tr><td><Button variant="info" onClick={undo}>
+              Undo
+            </Button></td></tr>
             {actions}
           </table>
-        </p>
-      </span>
-    );
-  }
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+}
+
+const ScoreModal = (props) => {
+  const [show, setShow] = useState(false);
+
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
+  let scores = props.players.map(function(player) {
+    return <li>{player.name}: {player.score}</li>;
+  });
+  return (
+    <>
+      <Dropdown.Item onClick={handleShow}>Scores</Dropdown.Item>
+
+      <Modal className="ActionModal" show={show} onHide={handleClose} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Recent actions</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <ul>
+            {scores}
+          </ul>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
 }
 
 export default App;

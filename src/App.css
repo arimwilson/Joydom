@@ -10,8 +10,7 @@
 .App header {
   background-color: gray;
   display: flex;
-  justify-content: space-between;
-  text-align: center;
+  justify-content: center;
   color: black;
 }
 
