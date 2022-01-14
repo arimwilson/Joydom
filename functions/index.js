@@ -225,6 +225,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
     game.actions.unshift(
         new Action(game.currentPlayer, data.action, tile, data.line, game));
     switch (data.action) {
+      // TODO(ariw): Prevent player from playing too many cards.
       case ACTIONS.PLAY: {
         if (data.line < 1 || data.line > game.players.length) {
           throw new functions.https.HttpsError(
