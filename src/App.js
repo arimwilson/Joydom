@@ -214,6 +214,10 @@ class StartPage extends React.Component {
     });
   }
 
+  componentWillUnmount() {
+    database.ref(`game/${gameId}`).off();
+  }
+
   render() {
     if (this.state.game === null) {
       return null;
@@ -221,7 +225,7 @@ class StartPage extends React.Component {
     let playersToJoin =
       this.state.game.numPlayers - this.state.game.players.length;
     let players = this.state.game.players.map(function(player) {
-      return (<li>{player.name}</li>);
+      return (<li key={player.name}>{player.name}</li>);
     });
     return  (
       <span className="StartPage">
@@ -270,6 +274,10 @@ class JoinPage extends React.Component {
     });
   }
 
+  componentWillUnmount() {
+    database.ref(`game/${gameId}`).off();
+  }
+
   render() {
     if (this.state.game === null) {
       return null;
@@ -277,7 +285,7 @@ class JoinPage extends React.Component {
     let playersToJoin =
       this.state.game.numPlayers - this.state.game.players.length;
     let players = this.state.game.players.map(function(player) {
-      return (<li>{player.name}</li>);
+      return (<li key={player.name}>{player.name}</li>);
     });
     return  (
       <span className="JoinPage">
@@ -292,12 +300,6 @@ class JoinPage extends React.Component {
   }
 }
 
-// TODO(ariw): Weird freaking bugs around drag-n-drop:
-// 1) Sometimes DnD doesn't seem to work at all (no dragging, no drop targets
-//    appearing).
-// 2) If a previous tile in someone's hand has been played, dragging a later
-//    tile onto the board acts as though the 1-previous tile has been played.
-//    (as though the HandTile for the previous piece was still there).
 class PlayPage extends React.Component {
   constructor(props) {
     super(props);
@@ -310,6 +312,10 @@ class PlayPage extends React.Component {
     }, (errorObject) => {
       console.log(errorObject);
     });
+  }
+
+  componentWillUnmount() {
+    database.ref(`game/${gameId}`).off();
   }
 
   render() {
@@ -345,18 +351,16 @@ class GameInfo extends React.Component {
   render() {
     return (
       <span className="GameInfo">
-        <p>
-          <b>Game information</b>:
-          <ul>
-            {typeof this.props.winner !== 'undefined' &&
-            <li><b>WINNER IS {this.props.winner}</b></li>}
-            <li>Game id: {gameId}</li>
-            <li>Round double: {this.props.currentDouble}</li>
-            <li>Unused doubles: {this.props.unusedDoubles}</li>
-            <li>Turn: {this.props.turn + 1}</li>
-            <li>Number of bones remaining: {this.props.numBones}</li>
-          </ul>
-        </p>
+        <b>Game information</b>:
+        <ul>
+          {typeof this.props.winner !== 'undefined' &&
+          <li><b>WINNER IS {this.props.winner}</b></li>}
+          <li>Game id: {gameId}</li>
+          <li>Round double: {this.props.currentDouble}</li>
+          <li>Unused doubles: {this.props.unusedDoubles}</li>
+          <li>Turn: {this.props.turn + 1}</li>
+          <li>Number of bones remaining: {this.props.numBones}</li>
+        </ul>
       </span>);
   }
 }
@@ -409,16 +413,12 @@ const LineDrop = (props) => {
     }),
     [props]
   );
-  let style = {
-    'display': 'inline-block',
-    'width': '60px',
-    'height': '30px',
-    'background': 'silver',
-  }
+  let style = {width: 'auto', height: '30px'};
   if (!canDrop) {
-    style['display'] = 'none';
+    style['visibility'] = 'hidden';
   }
-  return <div className="LineDrop" ref={drop} style={style} />;
+  return <img src="images/linedrop.svg" style={style}  alt="linedrop"
+              ref={drop} />;
 }
 
 const Penny = (props) => {
@@ -461,8 +461,8 @@ class PlayerRow extends React.Component {
         </td>
         <td>
           {line}
-          <LineDrop line={this.props.line} />
           <Penny penny={this.props.player.penny} />
+          <LineDrop line={this.props.line} />
         </td>
       </tr>);    
   }
@@ -472,17 +472,15 @@ class Playfield extends React.Component {
   render() {
     let currentPlayer = this.props.currentPlayer;
     let players = this.props.players.map(function(player, line) {
-      return <PlayerRow player={player} currentPlayer={currentPlayer}
-                        line={line + 1} />;
+      return <PlayerRow key={player.name} player={player}
+                        currentPlayer={currentPlayer} line={line + 1} />;
     });
     return (
       <span className="Playfield">
-        <p>
-          <b>Playfield:</b>
-          <table>
-            {players}
-          </table>
-        </p>
+        <b>Playfield:</b>
+        <table>
+          {players}
+        </table>
       </span>);
   }
 }
@@ -510,8 +508,8 @@ const HandTile = (props) => {
   props.extraAttributes['ref'] = drag;
   
   return (
-    <Tile tile={props.tile} vertical={props.vertical} dragging={isDragging}
-          extraAttributes={props.extraAttributes} />);
+      <Tile tile={props.tile} vertical={props.vertical} dragging={isDragging}
+            extraAttributes={props.extraAttributes} />);
 }
 
 class Hand extends React.Component {
@@ -554,12 +552,10 @@ class Hand extends React.Component {
     if (this.props.currentPlayer !== name) {
       return (
         <span className="Hand">
-          <p>
-            <b>{this.props.currentPlayer}'s turn.</b><br />
-            <Button variant="secondary" onClick={handleClick}>
-              Exit game
-            </Button>
-          </p>
+          <b>{this.props.currentPlayer}'s turn.</b><br />
+          <Button variant="secondary" onClick={handleClick}>
+            Exit game
+          </Button>
         </span>
       );
     }
@@ -573,39 +569,37 @@ class Hand extends React.Component {
     let hand = "empty";
     if ("hand" in this.props.players[i]) {
       hand = this.props.players[i].hand.map(function(tile) {
+        let tileString = `${tile.end1}${tile.end2}`;
         return (
-            <td>
+            <td key={tileString}>
               <HandTile tile={tile} vertical={false}
                         extraAttributes={{onClick: handleClick,
-                                          id: `${tile.end1}${tile.end2}`}} />
+                                          id: {tileString}}} />
             </td>);
       });
     }
     return (
       <span className="Hand">
-        <p>
-          <b>{this.props.currentPlayer}'s hand:</b>
-          <table><tr>{hand}</tr></table>
-          <Dropdown>
-            <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
-            <Button variant="primary" onClick={handleClick}>
-              Pass/end turn
-            </Button>{' '}
-            <Button variant="primary" onClick={handleClick}>
-              Walking
-            </Button>{' '}
-            <Dropdown.Toggle>
-              ...
-            </Dropdown.Toggle>
-
-            <Dropdown.Menu>
-              <ActionModal
-                  actions={this.props.actions} players={this.props.players} />
-              <ScoreModal players={this.props.players} />
-            </Dropdown.Menu>{' '}
-            <Button variant="secondary" onClick={handleClick}>Exit game</Button>
-          </Dropdown>
-        </p>
+        <b>{this.props.currentPlayer}'s hand:</b>
+        <table><tr>{hand}</tr></table>
+        <Dropdown>
+          <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
+          <Button variant="primary" onClick={handleClick}>
+            Pass/end turn
+          </Button>{' '}
+          <Button variant="primary" onClick={handleClick}>
+            Walking
+          </Button>{' '}
+          <Dropdown.Toggle>
+            ...
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <ActionModal
+                actions={this.props.actions} players={this.props.players} />
+            <ScoreModal players={this.props.players} />
+          </Dropdown.Menu>{' '}
+          <Button variant="secondary" onClick={handleClick}>Exit game</Button>
+        </Dropdown>
       </span>
     );
   }
@@ -693,7 +687,7 @@ const ScoreModal = (props) => {
   const handleShow = () => setShow(true);
 
   let scores = props.players.map(function(player) {
-    return <li>{player.name}: {player.score}</li>;
+    return <li key={player.name}>{player.name}: {player.score}</li>;
   });
   return (
     <>
@@ -701,7 +695,7 @@ const ScoreModal = (props) => {
 
       <Modal className="ActionModal" show={show} onHide={handleClose} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Recent actions</Modal.Title>
+          <Modal.Title>Scores</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <ul>

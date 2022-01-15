@@ -6,7 +6,7 @@
 ]>
 <svg  version="1.1" id="Layer_1" xmlns="&ns_svg;" xmlns:xlink="&ns_xlink;" width="147" height="75" viewBox="0 0 147 75"
 	 overflow="visible" enable-background="new 0 0 147 75" xml:space="preserve">
-<rect x="1.5" y="1.5" fill="#FFFFFF" stroke="#000000" stroke-width="3" width="144" height="72"/>
+<rect x="1.5" y="1.5" fill="#FFFFFF" stroke="#000000" stroke-width="3" width="144" height="72" rx="10"/>
 <rect x="73.557" y="2.798" stroke="#000000" stroke-width="4" width="0.313" height="68.025"/>
 <g>
 	<path fill="#E4BA22" d="M57.438,57.152"/>

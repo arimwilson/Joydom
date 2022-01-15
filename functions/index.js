@@ -256,7 +256,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
             tile.swapIfNeeded(line[line.length - 1]);
           } else {
             throw new functions.https.HttpsError(
-                "invalid-argument", "Can't play on non-matching tile.");
+                "invalid-argument",
+                `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
           }
           game.players[data.line - 1].line.push(tile);
         } else {
@@ -266,7 +267,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
             tile.swapIfNeeded(currentDouble);
           } else {
             throw new functions.https.HttpsError(
-                "invalid-argument", "Can't play on non-matching tile.");
+                "invalid-argument",
+                `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
           }
           game.players[data.line - 1].line = [tile];
         }
