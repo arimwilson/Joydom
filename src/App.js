@@ -10,9 +10,12 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Button from 'react-bootstrap/Button';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
+import Row from 'react-bootstrap/Row';
 
 import './App.css';
 import { firebaseConfig } from './firebaseConfig'
@@ -44,7 +47,8 @@ var name = [
   "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"][
       getRandomInt(0, 14)];
 var gameId = getRandomInt(0, 1500);
-var numPlayers = 2;
+var numPlayers = "4";
+var numAiPlayers = "2";
 var aboutPage = { __html: require('./about.html.js') };
 
 
@@ -118,6 +122,7 @@ class MenuPage extends React.Component {
       name: name,
       gameId: gameId,
       numPlayers: numPlayers,
+      numAiPlayers: numAiPlayers,
     };
   }
 
@@ -125,6 +130,7 @@ class MenuPage extends React.Component {
     name = this.state.name;
     gameId = this.state.gameId;
     numPlayers = this.state.numPlayers;
+    numAiPlayers = this.state.numAiPlayers;
   }
 
   start = () => { this.saveState(); this.props.changePage("start"); }
@@ -136,36 +142,61 @@ class MenuPage extends React.Component {
       <span className="MenuPage">
         Welcome to Joyce Dominoes!<br />
         <Form>
-          <Form.Group className="mb-3">
-            <Form.Label>Player name</Form.Label>
-            <Form.Control
-                type="text" name="name" value={this.state.name}
-                onChange={(e) => {this.setState({ "name": e.target.value })}}/>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Game ID</Form.Label>
-            <Form.Control
-                type="text" name="gameId" value={this.state.gameId}
-                onChange={
-                  (e) => {this.setState({ "gameId": e.target.value })}
-                }/>
-            <Form.Text>
-              Enter a unique game ID &lt;1500.
-            </Form.Text>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Number of players</Form.Label>
-            <Form.Control
-                  type="text" name="numPlayers" value={this.state.numPlayers}
-                  onChange={
-                    (e) => {this.setState({ "numPlayers": e.target.value })}
-                  }/>
-            <Form.Text>
-              Not needed if joining game.
-            </Form.Text>
-          </Form.Group>
-          <Button variant="primary" onClick={this.start}>Start</Button>{' '}
-          <Button variant="primary" onClick={this.join}>Join</Button>
+          <Container fluid>
+            <Row><Col>
+              <Form.Group>
+                <Form.Label>Player name</Form.Label>
+                <Form.Control
+                    type="text" name="name" value={this.state.name}
+                    onChange={(e) => {this.setState({ "name": e.target.value })}}/>
+              </Form.Group>
+            </Col></Row>
+            <Row><Col>
+              <Form.Group>
+                <Form.Label>Game ID</Form.Label>
+                <Form.Control
+                    type="text" name="gameId" value={this.state.gameId}
+                    onChange={
+                      (e) => {this.setState({ "gameId": e.target.value })}
+                    }/>
+                <Form.Text>
+                  Enter a unique game ID &lt;1500.
+                </Form.Text>
+              </Form.Group>
+            </Col></Row>
+            <Row>
+              <Col>
+                <Form.Group>
+                  <Form.Label>Players?</Form.Label>
+                  <Form.Control
+                        type="text" name="numPlayers"
+                        value={this.state.numPlayers} onChange={
+                          (e) => {this.setState({ "numPlayers": e.target.value })}
+                        }/>
+                  <Form.Text>
+                  Not needed if joining game.
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group>
+                  <Form.Label>Computer players?</Form.Label>
+                  <Form.Control
+                        type="text" name="numAiPlayers"
+                        value={this.state.numAiPlayers} onChange={
+                          (e) => {this.setState({ "numAiPlayers": e.target.value })}
+                        }/>
+                  <Form.Text>
+                  Not needed if joining game.
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row><Col>
+              <Button variant="primary" onClick={this.start}>Start</Button>{' '}
+              <Button variant="primary" onClick={this.join}>Join</Button>
+            </Col></Row>
+          </Container>
         </Form>
       </span>
     );
@@ -189,6 +220,7 @@ class StartPage extends React.Component {
       name: name,
       gameId: gameId,
       numPlayers: parseInt(numPlayers),
+      numAiPlayers: parseInt(numAiPlayers)
     }).then((response) => {
       database.ref(`game/${gameId}`).on('value', (snapshot) => {
         this.setState({ game: snapshot.val(), });

@@ -1,11 +1,12 @@
 module.exports = `
 <p>
-  Joyce Dominoes is a game inspired by the memory of Joyce Wilson (1933-2019).
-  Grandma Joyce is one of my heroes. She taught me how to be decent with people
-  when I was young and how to be gracious despite adversity as an adult. She
-  absolutely adored us grandchildren and always had a supply of ginger ale and
-  Klondike bars to treat us with. On the other hand, her background as a teacher
-  meant she would never let us get too far out of line.
+  Joyce Dominoes is a variant of Mexican Train Dominoes inspired by the memory
+  of Joyce Wilson (1933-2019). Grandma Joyce is one of my heroes. She taught me
+  how to be decent with people when I was young and how to be gracious despite
+  adversity as an adult. She absolutely adored us grandchildren and always had a
+  supply of ginger ale and Klondike bars to treat us with. On the other hand,
+  her background as a teacher meant she would never let us get too far out of
+  line.
 </p>
 <p>
   Every year for over 20 years, we would travel to Oceanside to spend time as a
@@ -30,14 +31,14 @@ Every player receives number of bones (dominoes).<br><br>
 
 <i>Start of play</i>
 <ul>
-<li>Play each of the double pieces descending from 9x9 to 0x0</li>
+<li>Play each of the double pieces descending from 9x9 to 0x0, one per round</li>
 <li>If no one has the targeted double:
 <ol>
 <li>See if anyone has the next lowest double that hasn’t been used yet (e.g. looking for double 6, no one has it, look for double 5 if it hasn’t already started a game)</li>
 <li>If no one has any of the remaining unused doubles, everyone draws a bone and the target matching process begins again</li>
-<li>If there are not enough bones, have the players with the lowest scores draw a bone and repeat the above process</li>
+<li>If there are not enough bones for every player to have one, have the players with the lowest scores draw a bone and repeat the above process</li>
 </ol></li>
-<li>Player who played piece must follow rules on playing a double below (see “each turn” rules)</li>
+<li>Player who played the targeted double must follow rules on playing a double below (see “each turn” rules), EXCEPT that they do not have to place a penny if they don't have a following domino</li>
 <li>Turns go clockwise from starting player</li>
 </ul>
 
@@ -59,8 +60,8 @@ Every player receives number of bones (dominoes).<br><br>
 
 <i>Win condition per round</i>
 <ul>
-<li>Player must state that they are “walking” when they have one piece remaining and it can be played unconditionally (e.g. on their domino line with no pennies present). If they do not, another player can call them out and if they are actually walking, they must draw two dominoes.</li>
-<li>No remaining pieces</li>
+<li>Either one player has no remaining pieces or there are no bones left and no one can play a tile</li>
+<li>Player must state that they are “walking” when they have one piece remaining and it can be played unconditionally (e.g. on their domino line with no pennies present). If they do not, another player can call them out and they must draw two dominoes</li>
 <li>Round score is derived from the number of pips remaining in their hand</li>
 </ul>
 

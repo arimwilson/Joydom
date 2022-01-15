@@ -11,8 +11,15 @@ exports.startGame = functions.https.onCall((data, context) => {
     throw new functions.https.HttpsError(
         "invalid-argument", `Game ID ${data.gameId} is too high`);
   }
-  const players = Array(1);
-  players[0] = {name: data.name, score: 0};
+  if (data.numAiPlayers >= data.numPlayers) {
+    throw new functions.https.HttpsError(
+        "invalid-argument", "Have to have at least one human player.");
+  }
+  const players = Array(1 + data.numAiPlayers);
+  players[0] = {name: data.name, score: 0, ai: false};
+  for (let i = 0; i < data.numAiPlayers; i++) {
+    players[i + 1] = {name: `Hal ${9000+i}`, score:0, ai: true};
+  }
   const game = {
     numPlayers: data.numPlayers,
     players: players,
@@ -32,7 +39,7 @@ exports.joinGame = functions.https.onCall((data, context) => {
       throw new functions.https.HttpsError(
           "invalid-argument", "Can't join a full game.");
     }
-    game.players.push({name: data.name, score: 0});
+    game.players.push({name: data.name, score: 0, ai: false});
     return admin.database().ref(`game/${data.gameId}`).set(game);
   }).catch((error) => {
     throw error;
@@ -205,6 +212,194 @@ function couldHavePlayedOnOwn(currentDouble, line, hand) {
   return false;
 }
 
+function takeAction(game, currentPlayerIndex, action) {
+  let tile = undefined;
+  if (typeof action.tile !== "undefined") {
+    // note: this makes the game not work for double sets above 9
+    tile = new DominoTile(Math.floor(action.tile / 10), action.tile % 10);
+  }
+  // TODO(ariw): Add extra action information (e.g. penny was added/removed).
+  game.actions.unshift(
+      new Action(game.currentPlayer, data.action, tile, data.line, game));
+  switch (data.action) {
+    // TODO(ariw): Prevent player from playing too many cards.
+    case ACTIONS.PLAY: {
+      if (data.line < 1 || data.line > game.players.length) {
+        throw new functions.https.HttpsError(
+            "invalid-argument", `Can't play on invalid line ${data.line}`);
+      }
+      let inHand = false;
+      for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
+        if (tile.equals(game.players[currentPlayerIndex].hand[i])) {
+          inHand = true;
+          game.players[currentPlayerIndex].hand.splice(i, 1);
+          break;
+        }
+      }
+      if (!inHand) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            `Can't play ${tile.end1}${tile.end2} not in hand.`);
+      }
+      // can play on own line or another player line only if penny present
+      if (data.line - 1 !== currentPlayerIndex &&
+          !game.players[data.line - 1].penny) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Can't play on another player's line with no penny.");
+      }
+      if ("line" in game.players[data.line - 1]) {
+        const line = game.players[data.line - 1].line;
+        if (tile.match(line[line.length - 1])) {
+          tile.swapIfNeeded(line[line.length - 1]);
+        } else {
+          throw new functions.https.HttpsError(
+              "invalid-argument",
+              `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
+        }
+        game.players[data.line - 1].line.push(tile);
+      } else {
+        const currentDouble = new DominoTile(
+            game.currentDouble, game.currentDouble);
+        if (tile.match(currentDouble)) {
+          tile.swapIfNeeded(currentDouble);
+        } else {
+          throw new functions.https.HttpsError(
+              "invalid-argument",
+              `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
+        }
+        game.players[data.line - 1].line = [tile];
+      }
+      game.players[currentPlayerIndex].hand.splice();
+      break;
+    }
+    case ACTIONS.DRAW: {
+      if (game.boneyard.length > 0) {
+        if ("hand" in game.players[currentPlayerIndex]) {
+          game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
+        } else {
+          game.players[currentPlayerIndex].hand = [game.boneyard[0]];
+        }
+        game.boneyard.splice(0, 1);
+      }
+      break;
+    }
+    case ACTIONS.PASS: {
+      // check for win condition
+      if (("walking" in game.players[currentPlayerIndex]) &&
+          game.players[currentPlayerIndex].walking === game.turn - 1 &&
+          !("hand" in game.players[currentPlayerIndex])) {
+        // win!
+        for (let i = 0; i < game.players.length; i++) {
+          let roundScore = 0;
+          if ("hand" in game.players[i]) {
+            for (let j = 0; j < game.players[i].hand.length; j++) {
+              const tile = game.players[i].hand[j];
+              roundScore += tile.end1 + tile.end2;
+            }
+          }
+          game.players[i].score += roundScore;
+        }
+        // check for game win condition
+        if (game.unusedDoubles.length === 0) {
+          let winner;
+          let winningScore = 1000;
+          for (let i = 0; i < game.players.length; i++) {
+            if (game.players[i].score < winningScore) {
+              winningScore = game.players[i].score;
+              winner = game.players[i].name;
+            }
+          }
+          game.winner = winner;
+        } else {
+          startRound(game);
+        }
+        break;
+      }
+      // can only pass if you've either played or drawn
+      // TODO(ariw): ensure that you've played at least one tile if you have
+      // one that you can play.
+      const currentActions = Action.currentActions(game);
+      if (currentActions.length === 0) {
+        throw new functions.https.HttpsError(
+            "invalid-argument", "Can't pass without playing or drawing.");
+      }
+      // if you did not play on your own and could not have; add a penny.
+      // doubles don't count as playing on your own but count if held in
+      // reserve. if you played on your own; remove a penny
+      let playedOrDrew = false;
+      let playedOnOwn = false;
+      for (let i = 0; i < currentActions.length; i++) {
+        const action = currentActions[i];
+        if (action.action === ACTIONS.PLAY ||
+            action.action === ACTIONS.DRAW) {
+          playedOrDrew = true;
+        }
+        if (action.action === ACTIONS.PLAY &&
+            action.line - 1 === currentPlayerIndex &&
+            Math.floor(action.tile / 10) !== action.tile % 10) {
+          playedOnOwn = true;
+        }
+      }
+      if (!playedOrDrew) {
+        throw new functions.https.HttpsError(
+            "invalid-argument", "Can't pass without playing or drawing.");
+      }
+      if (playedOnOwn) {
+        game.players[currentPlayerIndex].penny = false;
+      } else if (!couldHavePlayedOnOwn(
+          // TODO(ariw): This needs to correctly handle the case of playing a
+          // double on your own by itself (which should get you a penny).
+          game.currentDouble, game.players[currentPlayerIndex].line,
+          game.players[currentPlayerIndex].hand)) {
+        game.players[currentPlayerIndex].penny = true;
+      }
+      currentPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+      if (currentPlayerIndex === 1) {
+        game.turn++;
+      }
+      game.currentPlayer = game.players[currentPlayerIndex].name;
+      break;
+    }
+    case ACTIONS.WALKING: {
+      game.players[currentPlayerIndex].walking = game.turn;
+      break;
+    }
+    default: {
+      throw new functions.https.HttpsError(
+          "invalid-argument", "Invalid action specified.");
+    }
+  }
+  return currentPlayerIndex;
+}
+
+function takeAiActions(game, currentPlayerIndex) {
+  // ai strategy: play any playable tile OR if no playable tiles, draw. if only
+  // have one tile left, declare walking. then end turn.
+  let action = {action: ACTIONS.PLAY};
+  // do i have a playable tile?
+  // if not, draw
+  // should i declare walking?
+  // end turn
+  if (text === "Draw") {
+    request.action = ACTIONS.DRAW;
+  } else if (text === "Pass") {
+    request.action = ACTIONS.PASS;
+  } else if (text === "Pass/end turn") {
+    request.action = ACTIONS.PASS;
+  } else if (text === "Walking") {
+    request.action = ACTIONS.WALKING;
+  } else {
+    request.tile = Number(e.currentTarget.id);
+    request.line = parseInt(
+        prompt(`Which line (1-${this.props.players.length})?`));
+    if (Number.isNaN(request.line)) {
+      return;
+    }
+  }
+  return currentPlayerIndex;
+}
+
 exports.takeAction = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     const game = snapshot.val();
@@ -215,162 +410,12 @@ exports.takeAction = functions.https.onCall((data, context) => {
         break;
       }
     }
-    delete data.gameId;
-    let tile = undefined;
-    if (typeof data.tile !== "undefined") {
-      // note: this makes the game not work for double sets above 9
-      tile = new DominoTile(Math.floor(data.tile / 10), data.tile % 10);
-    }
-    // TODO(ariw): Add extra action information (e.g. penny was added/removed).
-    game.actions.unshift(
-        new Action(game.currentPlayer, data.action, tile, data.line, game));
-    switch (data.action) {
-      // TODO(ariw): Prevent player from playing too many cards.
-      case ACTIONS.PLAY: {
-        if (data.line < 1 || data.line > game.players.length) {
-          throw new functions.https.HttpsError(
-              "invalid-argument", `Can't play on invalid line ${data.line}`);
-        }
-        let inHand = false;
-        for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
-          if (tile.equals(game.players[currentPlayerIndex].hand[i])) {
-            inHand = true;
-            game.players[currentPlayerIndex].hand.splice(i, 1);
-            break;
-          }
-        }
-        if (!inHand) {
-          throw new functions.https.HttpsError(
-              "invalid-argument",
-              `Can't play ${tile.end1}${tile.end2} not in hand.`);
-        }
-        // can play on own line or another player line only if penny present
-        if (data.line - 1 !== currentPlayerIndex &&
-            !game.players[data.line - 1].penny) {
-          throw new functions.https.HttpsError(
-              "invalid-argument",
-              "Can't play on another player's line with no penny.");
-        }
-        if ("line" in game.players[data.line - 1]) {
-          const line = game.players[data.line - 1].line;
-          if (tile.match(line[line.length - 1])) {
-            tile.swapIfNeeded(line[line.length - 1]);
-          } else {
-            throw new functions.https.HttpsError(
-                "invalid-argument",
-                `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
-          }
-          game.players[data.line - 1].line.push(tile);
-        } else {
-          const currentDouble = new DominoTile(
-              game.currentDouble, game.currentDouble);
-          if (tile.match(currentDouble)) {
-            tile.swapIfNeeded(currentDouble);
-          } else {
-            throw new functions.https.HttpsError(
-                "invalid-argument",
-                `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
-          }
-          game.players[data.line - 1].line = [tile];
-        }
-        game.players[currentPlayerIndex].hand.splice();
-        break;
-      }
-      case ACTIONS.DRAW: {
-        if (game.boneyard.length > 0) {
-          if ("hand" in game.players[currentPlayerIndex]) {
-            game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
-          } else {
-            game.players[currentPlayerIndex].hand = [game.boneyard[0]];
-          }
-          game.boneyard.splice(0, 1);
-        }
-        break;
-      }
-      case ACTIONS.PASS: {
-        // check for win condition
-        if (("walking" in game.players[currentPlayerIndex]) &&
-            game.players[currentPlayerIndex].walking === game.turn - 1 &&
-            !("hand" in game.players[currentPlayerIndex])) {
-          // win!
-          for (let i = 0; i < game.players.length; i++) {
-            let roundScore = 0;
-            if ("hand" in game.players[i]) {
-              for (let j = 0; j < game.players[i].hand.length; j++) {
-                const tile = game.players[i].hand[j];
-                roundScore += tile.end1 + tile.end2;
-              }
-            }
-            game.players[i].score += roundScore;
-          }
-          // check for game win condition
-          if (game.unusedDoubles.length === 0) {
-            let winner;
-            let winningScore = 1000;
-            for (let i = 0; i < game.players.length; i++) {
-              if (game.players[i].score < winningScore) {
-                winningScore = game.players[i].score;
-                winner = game.players[i].name;
-              }
-            }
-            game.winner = winner;
-          } else {
-            startRound(game);
-          }
-          break;
-        }
-        // can only pass if you've either played or drawn
-        // TODO(ariw): ensure that you've played at least one tile if you have
-        // one that you can play.
-        const currentActions = Action.currentActions(game);
-        if (currentActions.length === 0) {
-          throw new functions.https.HttpsError(
-              "invalid-argument", "Can't pass without playing or drawing.");
-        }
-        // if you did not play on your own and could not have; add a penny.
-        // doubles don't count as playing on your own but count if held in
-        // reserve. if you played on your own; remove a penny
-        let playedOrDrew = false;
-        let playedOnOwn = false;
-        for (let i = 0; i < currentActions.length; i++) {
-          const action = currentActions[i];
-          if (action.action === ACTIONS.PLAY ||
-              action.action === ACTIONS.DRAW) {
-            playedOrDrew = true;
-          }
-          if (action.action === ACTIONS.PLAY &&
-              action.line - 1 === currentPlayerIndex &&
-              Math.floor(action.tile / 10) !== action.tile % 10) {
-            playedOnOwn = true;
-          }
-        }
-        if (!playedOrDrew) {
-          throw new functions.https.HttpsError(
-              "invalid-argument", "Can't pass without playing or drawing.");
-        }
-        if (playedOnOwn) {
-          game.players[currentPlayerIndex].penny = false;
-        } else if (!couldHavePlayedOnOwn(
-            // TODO(ariw): This needs to correctly handle the case of playing a
-            // double on your own by itself (which should get you a penny).
-            game.currentDouble, game.players[currentPlayerIndex].line,
-            game.players[currentPlayerIndex].hand)) {
-          game.players[currentPlayerIndex].penny = true;
-        }
-        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-        if (nextPlayerIndex === 1) {
-          game.turn++;
-        }
-        game.currentPlayer = game.players[nextPlayerIndex].name;
-        break;
-      }
-      case ACTIONS.WALKING: {
-        game.players[currentPlayerIndex].walking = game.turn;
-        break;
-      }
-      default: {
-        throw new functions.https.HttpsError(
-            "invalid-argument", "Invalid action specified.");
+    delete data.gameId;  // don't want this stored with actions
+    currentPlayerIndex = takeAction(game, currentPlayerIndex, data);
+    if (data.action === ACTIONS.PASS) {
+      // Take AI turns.
+      while (game.players[currentPlayerIndex].ai) {
+        currentPlayerIndex = takeAiActions(game, currentPlayerIndex);
       }
     }
     return admin.database().ref(`game/${gameId}`).set(game);
