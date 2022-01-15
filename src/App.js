@@ -558,13 +558,10 @@ class Hand extends React.Component {
       hand = this.props.players[i].hand.map(function(tile) {
         let tileString = `${tile.end1}${tile.end2}`;
         let tileComponent =
-            <HandTile tile={tile} vertical={false}
-                      extraAttributes={{onClick: handleClick,
-                                        id: {tileString}}} />;
+            <HandTile tile={tile} vertical={false} onClick={handleClick}
+                      id={tileString} />
         if (currentPlayer !== name) {
-          tileComponent = <Tile tile={tile} vertical={false}
-                                extraAttributes={{onClick: handleClick,
-                                                  id: {tileString}}} />;
+          tileComponent = <Tile tile={tile} vertical={false} />;
         }
         return <td key={tileString}>{tileComponent}</td>;
       });
