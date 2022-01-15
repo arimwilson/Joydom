@@ -241,7 +241,8 @@ exports.takeAction = functions.https.onCall((data, context) => {
         }
         if (!inHand) {
           throw new functions.https.HttpsError(
-              "invalid-argument", "Can't play tile not in hand.");
+              "invalid-argument",
+              `Can't play ${tile.end1}${tile.end2} not in hand.`);
         }
         // can play on own line or another player line only if penny present
         if (data.line - 1 !== currentPlayerIndex &&

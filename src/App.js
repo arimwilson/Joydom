@@ -35,14 +35,19 @@ if (window.location.hostname === "localhost" ||
   }
 }
 
-var name;
-var gameId;
-var numPlayers;
-var aboutPage = { __html: require('./about.html.js') };
-
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
+
+var name = [
+  "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
+  "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"][
+      getRandomInt(0, 14)];
+var gameId = getRandomInt(0, 1500);
+var numPlayers = 2;
+var aboutPage = { __html: require('./about.html.js') };
+
+
 
 class App extends React.Component {
   constructor(props) {
@@ -109,28 +114,22 @@ const AboutModal = () => {
 class MenuPage extends React.Component {
   constructor(props) {
     super(props);
-    let defaultNames = [
-      "Joyce", "Ari", "Callie", "Reece", "Hunter", "Brooke", "Jackie", "Kurt",
-      "Denise", "Courtney", "Ken", "Mickey", "Jennifer", "Jessy"];
     this.state = {
-      name: defaultNames[getRandomInt(0, defaultNames.length)],
-      gameId: getRandomInt(0, 1500),
-      numPlayers: 2,
+      name: name,
+      gameId: gameId,
+      numPlayers: numPlayers,
     };
   }
 
-  start = () => {
+  saveState = () => {
     name = this.state.name;
     gameId = this.state.gameId;
     numPlayers = this.state.numPlayers;
-    this.props.changePage("start");
   }
 
-  join = () => {
-    name = this.state.name;
-    gameId = this.state.gameId;
-    this.props.changePage("join");
-  }
+  start = () => { this.saveState(); this.props.changePage("start"); }
+
+  join = () => { this.saveState(); this.props.changePage("join"); }
 
   render() {
     return (
@@ -386,8 +385,7 @@ class Tile extends React.Component {
       style['opacity'] = 0.5;
     }
     return <img src={`images/${pipsLeft}${pipsRight}.svg`}
-                style={style} alt={`${pipsLeft}${pipsRight}`}
-                {...this.props.extraAttributes} />
+                style={style} alt={`${pipsLeft}${pipsRight}`} />
   }
 }
 
@@ -505,11 +503,11 @@ const HandTile = (props) => {
       isDragging: !!monitor.isDragging()
     })
   }));
-  props.extraAttributes['ref'] = drag;
   
   return (
-      <Tile tile={props.tile} vertical={props.vertical} dragging={isDragging}
-            extraAttributes={props.extraAttributes} />);
+    <span id={props.id} onClick={props.onClick} ref={drag}>
+      <Tile tile={props.tile} vertical={props.vertical} dragging={isDragging} />
+    </span>);
 }
 
 class Hand extends React.Component {
@@ -549,57 +547,52 @@ class Hand extends React.Component {
 
   render() {
     let handleClick = this.handleClick;
-    if (this.props.currentPlayer !== name) {
-      return (
-        <span className="Hand">
-          <b>{this.props.currentPlayer}'s turn.</b><br />
-          <Button variant="secondary" onClick={handleClick}>
-            Exit game
-          </Button>
-        </span>
-      );
-    }
     let i = 0;
     for (; i < this.props.players.length; i++) {
-      if (this.props.players[i].name === this.props.currentPlayer) {
+      if (this.props.players[i].name === name) {
         break;
       }
     }
-    
-    let hand = "empty";
+    let hand = "empty", currentPlayer = this.props.currentPlayer;
     if ("hand" in this.props.players[i]) {
       hand = this.props.players[i].hand.map(function(tile) {
         let tileString = `${tile.end1}${tile.end2}`;
-        return (
-            <td key={tileString}>
-              <HandTile tile={tile} vertical={false}
-                        extraAttributes={{onClick: handleClick,
-                                          id: {tileString}}} />
-            </td>);
+        let tileComponent =
+            <HandTile tile={tile} vertical={false}
+                      extraAttributes={{onClick: handleClick,
+                                        id: {tileString}}} />;
+        if (currentPlayer !== name) {
+          tileComponent = <Tile tile={tile} vertical={false}
+                                extraAttributes={{onClick: handleClick,
+                                                  id: {tileString}}} />;
+        }
+        return <td key={tileString}>{tileComponent}</td>;
       });
     }
     return (
       <span className="Hand">
-        <b>{this.props.currentPlayer}'s hand:</b>
+        <b>{name}'s hand:</b>
         <table><tr>{hand}</tr></table>
-        <Dropdown>
-          <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
-          <Button variant="primary" onClick={handleClick}>
-            Pass/end turn
-          </Button>{' '}
-          <Button variant="primary" onClick={handleClick}>
-            Walking
-          </Button>{' '}
-          <Dropdown.Toggle>
-            ...
-          </Dropdown.Toggle>
-          <Dropdown.Menu>
-            <ActionModal
-                actions={this.props.actions} players={this.props.players} />
-            <ScoreModal players={this.props.players} />
-          </Dropdown.Menu>{' '}
-          <Button variant="secondary" onClick={handleClick}>Exit game</Button>
-        </Dropdown>
+        {this.props.currentPlayer === name &&
+          <Dropdown>
+            <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
+            <Button variant="primary" onClick={handleClick}>
+              Pass/end turn
+            </Button>{' '}
+            <Button variant="primary" onClick={handleClick}>
+              Walking
+            </Button>{' '}
+            <Dropdown.Toggle>
+              ...
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <ActionModal
+                  actions={this.props.actions} players={this.props.players} />
+              <ScoreModal players={this.props.players} />
+            </Dropdown.Menu>{' '}
+            <Button variant="secondary" onClick={handleClick}>Exit game</Button>
+          </Dropdown>
+        }
       </span>
     );
   }
