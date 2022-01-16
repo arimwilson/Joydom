@@ -405,18 +405,19 @@ class Tile extends React.Component {
       pipsRight = this.props.tile.end1;
     }
     let style = {width: 'auto', height: '30px'};
-    if (rotated && this.props.vertical) {
-      style['transform'] = 'rotate(270deg)';
-    } else if (rotated) {
+    let src = `images/${pipsLeft}${pipsRight}`;
+    if (this.props.vertical) {
+      style['height'] = '60px';
+      src = src.concat('v');
+    }
+    if (rotated) {
       style['transform'] = 'rotate(180deg)';
-    } else if (this.props.vertical) {
-      style['transform'] = 'rotate(90deg)';
     }
     if (this.props.dragging) {
       style['opacity'] = 0.5;
     }
-    return <img src={`images/${pipsLeft}${pipsRight}.svg`}
-                style={style} alt={`${pipsLeft}${pipsRight}`} />
+    return <img src={`${src}.svg`} style={style}
+                alt={`${pipsLeft}${pipsRight}`} />
   }
 }
 

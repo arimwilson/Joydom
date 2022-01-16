@@ -18,7 +18,7 @@ exports.startGame = functions.https.onCall((data, context) => {
   const players = Array(1 + data.numAiPlayers);
   players[0] = {name: data.name, score: 0, ai: false};
   for (let i = 0; i < data.numAiPlayers; i++) {
-    players[i + 1] = {name: `Hal ${9000+i}`, score:0, ai: true};
+    players[i + 1] = {name: `Hal ${9000+i}`, score: 0, ai: true};
   }
   const game = {
     numPlayers: data.numPlayers,
@@ -162,7 +162,8 @@ function startRound(game) {
   // it's not there, check for the next unsuded double. if none of the unused
   // doubles are in player hands, add tiles to player hands from boneyard until
   // they have one.
-  let foundDouble = false, j;
+  let foundDouble = false;
+  let j;
   while (!foundDouble) {
     for (let i = 0; i < game.unusedDoubles.length; i++) {
       game.currentDouble = game.unusedDoubles[i];
@@ -209,16 +210,15 @@ exports.startRound = functions.https.onCall((data, context) => {
 
 function getTilesPlayable(hand, currentDouble, players, currentPlayerIndex) {
   // return tiles playable on your line first
-  let playableTiles = getTilesPlayableOnLine(
-    hand, currentDouble, players[currentPlayerIndex].line);
-  let lines = Array(playableTiles.length).fill(currentPlayerIndex + 1);
+  const playableTiles = getTilesPlayableOnLine(
+      hand, currentDouble, players[currentPlayerIndex].line);
+  const lines = Array(playableTiles.length).fill(currentPlayerIndex + 1);
   for (let i = 0; i < players.length; i += (i !== currentPlayerIndex? 1: 2)) {
     if (!players[i].penny) continue;
-    let linePlayableTiles = getTilesPlayableOnLine(
+    const linePlayableTiles = getTilesPlayableOnLine(
         hand, currentDouble, players[i].line);
     playableTiles.push(...linePlayableTiles);
     lines.push(...Array(linePlayableTiles.length).fill(i + 1));
-    
   }
   return [playableTiles, lines];
 }
@@ -231,9 +231,9 @@ function getTilesPlayableOnLine(hand, currentDouble, line) {
   if (typeof line !== "undefined") {
     matchTile = line[line.length - 1];
   }
-  let playableTiles = [];
+  const playableTiles = [];
   for (let i = 0; i < hand.length; i++) {
-    let handTile = new DominoTile(hand[i].end1, hand[i].end2);
+    const handTile = new DominoTile(hand[i].end1, hand[i].end2);
     if (handTile.match(matchTile)) {
       playableTiles.push(`${handTile.end1}${handTile.end2}`);
     }
@@ -454,7 +454,7 @@ exports.takeAction = functions.https.onCall((data, context) => {
         break;
       }
     }
-    delete data.gameId;  // don't want this stored with actions
+    delete data.gameId; // don't want this stored with actions
     currentPlayerIndex = takeAction(game, currentPlayerIndex, data);
     if (data.action === ACTIONS.PASS) {
       // Take AI turns.
