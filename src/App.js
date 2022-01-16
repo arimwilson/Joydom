@@ -52,7 +52,6 @@ var numAiPlayers = "2";
 var aboutPage = { __html: require('./about.html.js') };
 
 
-
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -480,13 +479,17 @@ class PlayerRow extends React.Component {
         }
       }):
       undefined);
-    const isCurrentPlayer = this.props.player.name === this.props.currentPlayer;
+    let style = {};
+    if (this.props.player.name === this.props.currentPlayer) {
+      style['text-decoration'] = 'underline';
+    }
+    let length = "hand" in this.props.player? this.props.player.hand.length: 0;
     return (
       <tr>
         <td>
-          {isCurrentPlayer?
-              <u>{this.props.player.name}</u> :
-              this.props.player.name}
+          <span style={style}>
+            {this.props.player.name} ({length} tiles)
+          </span>
           <Walking walking={"walking" in this.props.player} />
         </td>
         <td>

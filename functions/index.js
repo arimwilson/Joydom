@@ -162,11 +162,11 @@ function startRound(game) {
   // it's not there, check for the next unsuded double. if none of the unused
   // doubles are in player hands, add tiles to player hands from boneyard until
   // they have one.
-  let foundDouble = false;
+  let foundDouble = false, j;
   while (!foundDouble) {
     for (let i = 0; i < game.unusedDoubles.length; i++) {
       game.currentDouble = game.unusedDoubles[i];
-      for (let j = 0; j < game.players.length; j++) {
+      for (j = 0; j < game.players.length; j++) {
         const doubleIndex = game.players[j].hand.findIndex(isDouble(
             game.currentDouble));
         if (doubleIndex !== -1) {
@@ -189,11 +189,17 @@ function startRound(game) {
     }
   }
   game.turn = 0;
+  // Take AI turns.
+  while (game.players[j].ai) {
+    j = takeAiActions(game, j);
+  }
 }
 
 exports.startRound = functions.https.onCall((data, context) => {
   return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
     const game = snapshot.val();
+    // random starting turn order
+    game.players = getShuffledArray(game.players);
     startRound(game);
     return admin.database().ref(`game/${data.gameId}`).set(game);
   }).catch((error) => {
@@ -201,15 +207,42 @@ exports.startRound = functions.https.onCall((data, context) => {
   });
 });
 
-function couldHavePlayedOnOwn(currentDouble, line, hand) {
+function getTilesPlayable(hand, currentDouble, players, currentPlayerIndex) {
+  // return tiles playable on your line first
+  let playableTiles = getTilesPlayableOnLine(
+    hand, currentDouble, players[currentPlayerIndex].line);
+  let lines = Array(playableTiles.length).fill(currentPlayerIndex + 1);
+  for (let i = 0; i < players.length; i += (i !== currentPlayerIndex? 1: 2)) {
+    if (!players[i].penny) continue;
+    let linePlayableTiles = getTilesPlayableOnLine(
+        hand, currentDouble, players[i].line);
+    playableTiles.push(...linePlayableTiles);
+    lines.push(...Array(linePlayableTiles.length).fill(i + 1));
+    
+  }
+  return [playableTiles, lines];
+}
+
+function getTilesPlayableOnLine(hand, currentDouble, line) {
+  if (typeof hand === "undefined") {
+    return [];
+  }
   let matchTile = new DominoTile(currentDouble, currentDouble);
   if (typeof line !== "undefined") {
     matchTile = line[line.length - 1];
   }
+  let playableTiles = [];
   for (let i = 0; i < hand.length; i++) {
-    if (new DominoTile(hand[i]).match(matchTile)) return true;
+    let handTile = new DominoTile(hand[i].end1, hand[i].end2);
+    if (handTile.match(matchTile)) {
+      playableTiles.push(`${handTile.end1}${handTile.end2}`);
+    }
   }
-  return false;
+  return playableTiles;
+}
+
+function couldHavePlayedOnLine(hand, currentDouble, line) {
+  return getTilesPlayableOnLine(hand, currentDouble, line).length > 0;
 }
 
 function takeAction(game, currentPlayerIndex, action) {
@@ -220,13 +253,13 @@ function takeAction(game, currentPlayerIndex, action) {
   }
   // TODO(ariw): Add extra action information (e.g. penny was added/removed).
   game.actions.unshift(
-      new Action(game.currentPlayer, data.action, tile, data.line, game));
-  switch (data.action) {
+      new Action(game.currentPlayer, action.action, tile, action.line, game));
+  switch (action.action) {
     // TODO(ariw): Prevent player from playing too many cards.
     case ACTIONS.PLAY: {
-      if (data.line < 1 || data.line > game.players.length) {
+      if (action.line < 1 || action.line > game.players.length) {
         throw new functions.https.HttpsError(
-            "invalid-argument", `Can't play on invalid line ${data.line}`);
+            "invalid-argument", `Can't play on invalid line ${action.line}`);
       }
       let inHand = false;
       for (let i = 0; i < game.players[currentPlayerIndex].hand.length; i++) {
@@ -242,14 +275,14 @@ function takeAction(game, currentPlayerIndex, action) {
             `Can't play ${tile.end1}${tile.end2} not in hand.`);
       }
       // can play on own line or another player line only if penny present
-      if (data.line - 1 !== currentPlayerIndex &&
-          !game.players[data.line - 1].penny) {
+      if (action.line - 1 !== currentPlayerIndex &&
+          !game.players[action.line - 1].penny) {
         throw new functions.https.HttpsError(
             "invalid-argument",
             "Can't play on another player's line with no penny.");
       }
-      if ("line" in game.players[data.line - 1]) {
-        const line = game.players[data.line - 1].line;
+      if ("line" in game.players[action.line - 1]) {
+        const line = game.players[action.line - 1].line;
         if (tile.match(line[line.length - 1])) {
           tile.swapIfNeeded(line[line.length - 1]);
         } else {
@@ -257,7 +290,7 @@ function takeAction(game, currentPlayerIndex, action) {
               "invalid-argument",
               `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
         }
-        game.players[data.line - 1].line.push(tile);
+        game.players[action.line - 1].line.push(tile);
       } else {
         const currentDouble = new DominoTile(
             game.currentDouble, game.currentDouble);
@@ -268,13 +301,13 @@ function takeAction(game, currentPlayerIndex, action) {
               "invalid-argument",
               `Can't play ${tile.end1}${tile.end2} on non-matching tile.`);
         }
-        game.players[data.line - 1].line = [tile];
+        game.players[action.line - 1].line = [tile];
       }
       game.players[currentPlayerIndex].hand.splice();
       break;
     }
     case ACTIONS.DRAW: {
-      if (game.boneyard.length > 0) {
+      if ("boneyard" in game) {
         if ("hand" in game.players[currentPlayerIndex]) {
           game.players[currentPlayerIndex].hand.push(game.boneyard[0]);
         } else {
@@ -347,7 +380,7 @@ function takeAction(game, currentPlayerIndex, action) {
       }
       if (playedOnOwn) {
         game.players[currentPlayerIndex].penny = false;
-      } else if (!couldHavePlayedOnOwn(
+      } else if (!couldHavePlayedOnLine(
           // TODO(ariw): This needs to correctly handle the case of playing a
           // double on your own by itself (which should get you a penny).
           game.currentDouble, game.players[currentPlayerIndex].line,
@@ -374,30 +407,41 @@ function takeAction(game, currentPlayerIndex, action) {
 }
 
 function takeAiActions(game, currentPlayerIndex) {
-  // ai strategy: play any playable tile OR if no playable tiles, draw. if only
-  // have one tile left, declare walking. then end turn.
-  let action = {action: ACTIONS.PLAY};
-  // do i have a playable tile?
-  // if not, draw
-  // should i declare walking?
-  // end turn
-  if (text === "Draw") {
-    request.action = ACTIONS.DRAW;
-  } else if (text === "Pass") {
-    request.action = ACTIONS.PASS;
-  } else if (text === "Pass/end turn") {
-    request.action = ACTIONS.PASS;
-  } else if (text === "Walking") {
-    request.action = ACTIONS.WALKING;
+  // ai strategy: play any playable tile, preferring its line, OR if no playable
+  // tiles, draw. if only have one tile left, declare walking. then end turn.
+  let action = {};
+  let [playableTiles, lines] = getTilesPlayable(
+      game.players[currentPlayerIndex].hand, game.currentDouble, game.players,
+      currentPlayerIndex);
+  // play if i have a playable tile
+  if (playableTiles.length > 0 && lines.length > 0) {
+    action.action = ACTIONS.PLAY;
+    action.tile = playableTiles[0];
+    action.line = lines[0];
+    currentPlayerIndex = takeAction(game, currentPlayerIndex, action);
+  // if not, draw and see if i have a playable tile again
   } else {
-    request.tile = Number(e.currentTarget.id);
-    request.line = parseInt(
-        prompt(`Which line (1-${this.props.players.length})?`));
-    if (Number.isNaN(request.line)) {
-      return;
+    action.action = ACTIONS.DRAW;
+    currentPlayerIndex = takeAction(game, currentPlayerIndex, action);
+    [playableTiles, lines] = getTilesPlayable(
+        game.players[currentPlayerIndex].hand, game.currentDouble, game.players,
+        currentPlayerIndex);
+    if (playableTiles.length > 0 && lines.length > 0) {
+      action.action = ACTIONS.PLAY;
+      action.tile = playableTiles[0];
+      action.line = lines[0];
+      currentPlayerIndex = takeAction(game, currentPlayerIndex, action);
     }
   }
-  return currentPlayerIndex;
+  // check if we're walking
+  if (game.players[currentPlayerIndex].hand.length === 1 &&
+      lines.length >= 2 && lines[1] === currentPlayerIndex + 1) {
+    action = {action: ACTIONS.WALKING};
+    currentPlayerIndex = takeAction(game, currentPlayerIndex, action);
+  }
+  // end turn
+  action = {action: ACTIONS.PASS};
+  return takeAction(game, currentPlayerIndex, action);
 }
 
 exports.takeAction = functions.https.onCall((data, context) => {
