@@ -442,7 +442,7 @@ const LineDrop = (props) => {
     }),
     [props]
   );
-  let style = {width: 'auto', height: '30px'};
+  let style = {width: '60px', height: '60px'};
   if (!canDrop) {
     style['visibility'] = 'hidden';
   }
