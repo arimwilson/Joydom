@@ -432,6 +432,7 @@ function playTile(tile, line) {
   });
 }
 
+// TODO(ariw): Show LineDrop only if either it's my line or there's a penny.
 const LineDrop = (props) => {
   const [{ canDrop }, drop] = useDrop(
     () => ({
@@ -606,8 +607,8 @@ class Hand extends React.Component {
       <span className="Hand">
         <b>{name}'s hand:</b>
         <table><tr>{hand}</tr></table>
-        {this.props.currentPlayer === name &&
-          <Dropdown>
+        <Dropdown>
+          {this.props.currentPlayer === name && <>
             <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
             <Button variant="primary" onClick={handleClick}>
               Pass/end turn
@@ -615,17 +616,17 @@ class Hand extends React.Component {
             <Button variant="primary" onClick={handleClick}>
               Walking
             </Button>{' '}
-            <Dropdown.Toggle>
-              ...
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <ActionModal
-                  actions={this.props.actions} players={this.props.players} />
-              <ScoreModal players={this.props.players} />
-            </Dropdown.Menu>{' '}
-            <Button variant="secondary" onClick={handleClick}>Exit game</Button>
-          </Dropdown>
-        }
+          </>}
+          <Dropdown.Toggle>
+            ...
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <ActionModal
+                actions={this.props.actions} players={this.props.players} />
+            <ScoreModal players={this.props.players} />
+          </Dropdown.Menu>{' '}
+          <Button variant="secondary" onClick={handleClick}>Exit game</Button>
+        </Dropdown>
       </span>
     );
   }
