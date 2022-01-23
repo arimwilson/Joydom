@@ -364,7 +364,7 @@ function takeAction(game, currentPlayerIndex, action) {
           game.players[i].score += roundScore;
         }
         // check for game win condition
-        if (game.unusedDoubles.length === 0) {
+        if (!("unusedDoubles" in game) || game.unusedDoubles.length === 0) {
           let winner;
           let winningScore = 1000;
           for (let i = 0; i < game.players.length; i++) {
