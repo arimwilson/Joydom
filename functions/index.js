@@ -336,9 +336,7 @@ function takeAction(game, currentPlayerIndex, action) {
         }
         if (action.action === ACTIONS.PLAY &&
             action.line - 1 === currentPlayerIndex &&
-            (action.tile.end1 !== action.tile.end2 ||
-             new DominoTile(game.currentDouble, game.currentDouble).match(
-                 action.tile))) {
+            action.tile.end1 !== action.tile.end2) {
           playedOnOwn = true;
         }
       }
