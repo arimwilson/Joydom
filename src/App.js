@@ -358,7 +358,6 @@ class PlayPage extends React.Component {
             winner={this.state.game.winner}
             turn={this.state.game.turn}
             currentDouble={this.state.game.currentDouble}
-            unusedDoubles={this.state.game.unusedDoubles}
             numBones=
             {"boneyard" in this.state.game ?
               this.state.game.boneyard.length : 0}
@@ -370,7 +369,8 @@ class PlayPage extends React.Component {
             currentPlayer={this.state.game.currentPlayer}
             players={this.state.game.players}
             actions={this.state.game.actions}
-            changePage={this.props.changePage} />
+            changePage={this.props.changePage} 
+            unusedDoubles={this.state.game.unusedDoubles} />
         </DndProvider>
       </span>
     )
@@ -379,6 +379,8 @@ class PlayPage extends React.Component {
 
 class GameInfo extends React.Component {
   render() {
+    const tile = {end1: this.props.currentDouble,
+                  end2: this.props.currentDouble};
     return (
       <span className="GameInfo">
         <b>Game information</b>:
@@ -386,8 +388,7 @@ class GameInfo extends React.Component {
           {typeof this.props.winner !== 'undefined' &&
           <li><b>WINNER IS {this.props.winner}</b></li>}
           <li>Game id: {gameId}</li>
-          <li>Round double: {this.props.currentDouble}</li>
-          <li>Unused doubles: {this.props.unusedDoubles}</li>
+          <li>Round double: <Tile tile={tile} /></li>
           <li>Turn: {this.props.turn + 1}</li>
           <li>Number of bones remaining: {this.props.numBones}</li>
         </ul>
@@ -623,7 +624,8 @@ class Hand extends React.Component {
           <Dropdown.Menu>
             <ActionModal
                 actions={this.props.actions} players={this.props.players} />
-            <ScoreModal players={this.props.players} />
+            <ScoreModal players={this.props.players}
+                        unusedDoubles={this.props.unusedDoubles} />
           </Dropdown.Menu>{' '}
           <Button variant="secondary" onClick={handleClick}>Exit game</Button>
         </Dropdown>
@@ -712,19 +714,37 @@ const ScoreModal = (props) => {
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+  
+  const getRemainingDoubles = (unusedDoubles) => {
+    let remainingDoubles = "";
+    if (typeof unusedDoubles === 'undefined') {
+      unusedDoubles = [];
+    }
+    for (let i = 9; i >= 0; i--) {
+      if (unusedDoubles.includes(i)) {
+       remainingDoubles += `${i} `
+      } else {
+        remainingDoubles += `<s>${i}</s> `
+      }
+    }
+    return remainingDoubles;
+  };
 
   let scores = props.players.map(function(player) {
     return <li key={player.name}>{player.name}: {player.score}</li>;
   });
   return (
     <>
-      <Dropdown.Item onClick={handleShow}>Scores</Dropdown.Item>
+      <Dropdown.Item onClick={handleShow}>Score sheet</Dropdown.Item>
 
       <Modal className="ActionModal" show={show} onHide={handleClose} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Scores</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          Doubles remaining:{' '}
+              <span dangerouslySetInnerHTML={{
+                   __html: getRemainingDoubles(props.unusedDoubles) }} />
           <ul>
             {scores}
           </ul>

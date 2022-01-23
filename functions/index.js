@@ -18,7 +18,7 @@ exports.startGame = functions.https.onCall((data, context) => {
   const players = Array(1 + data.numAiPlayers);
   players[0] = {name: data.name, score: 0, ai: false};
   for (let i = 0; i < data.numAiPlayers; i++) {
-    players[i + 1] = {name: `Hal ${9000+i}`, score: 0, ai: true};
+    players[i + 1] = {name: `Kurt 00${6+i}`, score: 0, ai: true};
   }
   const game = {
     numPlayers: data.numPlayers,
@@ -246,6 +246,10 @@ function couldHavePlayedOnLine(hand, currentDouble, line) {
 }
 
 function takeAction(game, currentPlayerIndex, action) {
+  if (game.winner) {
+    throw new functions.https.HttpsError(
+        "invalid-argument", "Can't play after game has ended!");
+  }
   let tile = undefined;
   if (typeof action.tile !== "undefined") {
     // note: this makes the game not work for double sets above 9
