@@ -431,7 +431,7 @@ function playTile(tile, line) {
   });
 }
 
-// TODO(ariw): Show LineDrop only if either it's my line or there's a penny.
+// TODO(ariw): Show LineDrop only if it matches the incoming tile.
 const LineDrop = (props) => {
   const [{ canDrop }, drop] = useDrop(
     () => ({
