@@ -357,20 +357,19 @@ class PlayPage extends React.Component {
             state={this.state.game.state}
             winner={this.state.game.winner}
             turn={this.state.game.turn}
-            currentDouble={this.state.game.currentDouble}
-            numBones=
-            {"boneyard" in this.state.game ?
-              this.state.game.boneyard.length : 0}
-          />
+            currentDouble={this.state.game.currentDouble} />
           <Playfield
             players={this.state.game.players}
             currentPlayer={this.state.game.currentPlayer} />
           <Hand
             currentPlayer={this.state.game.currentPlayer}
             players={this.state.game.players}
+            numBones=
+            {"boneyard" in this.state.game ?
+              this.state.game.boneyard.length : 0}
+            unusedDoubles={this.state.game.unusedDoubles}
             actions={this.state.game.actions}
-            changePage={this.props.changePage} 
-            unusedDoubles={this.state.game.unusedDoubles} />
+            changePage={this.props.changePage} />
         </DndProvider>
       </span>
     )
@@ -390,7 +389,6 @@ class GameInfo extends React.Component {
           <li>Game id: {gameId}</li>
           <li>Round double: <Tile tile={tile} /></li>
           <li>Turn: {this.props.turn + 1}</li>
-          <li>Number of bones remaining: {this.props.numBones}</li>
         </ul>
       </span>);
   }
@@ -438,6 +436,9 @@ const LineDrop = (props) => {
   const [{ canDrop }, drop] = useDrop(
     () => ({
       accept: DraggableTypes.HAND_TILE,
+      canDrop: () => {
+        return props.isCurrentPlayer || props.penny;
+      },
       drop: (item) => playTile(item, props.line),
       collect: (monitor) => ({
         canDrop: !!monitor.canDrop()
@@ -483,8 +484,9 @@ class PlayerRow extends React.Component {
       }):
       undefined);
     let style = {};
-    if (this.props.player.name === this.props.currentPlayer) {
-      style['text-decoration'] = 'underline';
+    let isCurrentPlayer = this.props.player.name === this.props.currentPlayer;
+    if (isCurrentPlayer) {
+      style['textDecoration'] = 'underline';
     }
     let length = "hand" in this.props.player? this.props.player.hand.length: 0;
     return (
@@ -498,7 +500,8 @@ class PlayerRow extends React.Component {
         <td>
           {line}
           <Penny penny={this.props.player.penny} />
-          <LineDrop line={this.props.line} />
+          <LineDrop line={this.props.line} isCurrentPlayer={isCurrentPlayer}
+                    penny={this.props.player.penny} />
         </td>
       </tr>);    
   }
@@ -558,7 +561,7 @@ class Hand extends React.Component {
     const text = e.currentTarget.textContent;
     var takeAction = functions.httpsCallable('takeAction');
     var request = {gameId: gameId, action: ACTIONS.PLAY};
-    if (text === "Draw") {
+    if (text.startsWith("Draw")) {
       request.action = ACTIONS.DRAW;
     } else if (text === "Pass") {
       request.action = ACTIONS.PASS;
@@ -610,7 +613,9 @@ class Hand extends React.Component {
         <table><tr>{hand}</tr></table>
         <Dropdown>
           {this.props.currentPlayer === name && <>
-            <Button variant="primary" onClick={handleClick}>Draw</Button>{' '}
+            <Button variant="primary" onClick={handleClick}>
+              Draw ({this.props.numBones} remaining)
+            </Button>{' '}
             <Button variant="primary" onClick={handleClick}>
               Pass/end turn
             </Button>{' '}
