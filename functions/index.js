@@ -496,3 +496,23 @@ exports.undo = functions.https.onCall((data, context) => {
     throw error;
   });
 });
+
+exports.moveTile = functions.https.onCall((data, context) => {
+  return admin.database().ref(`game/${data.gameId}`).get().then((snapshot) => {
+    const game = snapshot.val();
+    if (data.flip) {
+      const tile = game.players[data.player].hand[data.tile1];
+      const end2 = tile.end2;
+      tile.end2 = tile.end1;
+      tile.end1 = end2;
+    } else {
+      const tile2 = game.players[data.player].hand[data.tile2];
+      game.players[data.player].hand[data.tile2] =
+          game.players[data.player].hand[data.tile1];
+      game.players[data.player].hand[data.tile1] = tile2;
+    }
+    return admin.database().ref(`game/${data.gameId}`).set(game);
+  }).catch((error) => {
+    throw error;
+  });
+});
